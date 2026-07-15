@@ -1,40 +1,16 @@
 import { useRef } from "react";
-import type { Group, Mesh, MeshStandardMaterial, PointLight } from "three";
+import type { Mesh, MeshStandardMaterial, PointLight } from "three";
 import { sandHeight } from "../terrain";
-import { easeInOut, useEventAnim, type EventChannel } from "./helpers";
+import { easeInOut, useEventAnim, type EventChannel } from "../../../systems/eventHelpers";
+import { Figure, walk } from "../../../effects/npc";
 import type { CoconutChannels } from "./coconutEvents";
-
-/** Minimal humanoid silhouette shared by every NPC. Deliberately abstract. */
-function Figure({ shirt = "#7a6a5a", pants = "#4a4440" }: { shirt?: string; pants?: string }) {
-  return (
-    <group>
-      {[-1, 1].map((s) => (
-        <mesh key={s} position={[s * 0.07, 0.38, 0]} castShadow>
-          <cylinderGeometry args={[0.045, 0.05, 0.75, 6]} />
-          <meshStandardMaterial color={pants} roughness={1} />
-        </mesh>
-      ))}
-      <mesh position={[0, 1.05, 0]} castShadow>
-        <cylinderGeometry args={[0.13, 0.16, 0.62, 8]} />
-        <meshStandardMaterial color={shirt} roughness={1} />
-      </mesh>
-      <mesh position={[0, 1.52, 0]} castShadow>
-        <sphereGeometry args={[0.11, 12, 10]} />
-        <meshStandardMaterial color="#c9a582" roughness={1} />
-      </mesh>
-    </group>
-  );
-}
-
-/** Walking gait applied to a whole figure: bob + slight roll. */
-function walk(g: Group, x: number, z: number, t: number, facing: number) {
-  g.position.set(x, sandHeight(x, z) + Math.abs(Math.sin(t * 5.2)) * 0.04, z);
-  g.rotation.set(0, facing, Math.sin(t * 5.2) * 0.04);
-}
 
 /** Tourist strolls the length of the beach behind the coconut. */
 function Tourist({ channel }: { channel: EventChannel }) {
-  const ref = useEventAnim(channel, (g, p, t) => walk(g, -12 + easeInOut(p) * 24, 3.8, t, Math.PI / 2));
+  const ref = useEventAnim(channel, (g, p, t) => {
+    const x = -12 + easeInOut(p) * 24;
+    walk(g, x, sandHeight(x, 3.8), 3.8, t, Math.PI / 2);
+  });
   return (
     <group ref={ref} visible={false}>
       <Figure shirt="#a8654a" pants="#d8cba8" />
@@ -52,7 +28,7 @@ function Photographer({ channel }: { channel: EventChannel }) {
     else if (p < 0.65) x = -2;
     else x = -2 - easeInOut((p - 0.65) / 0.35) * 8;
     const moving = p < 0.35 || p > 0.65;
-    walk(g, x, 3, moving ? t : 0, moving ? Math.PI / 2 : Math.PI * 0.85);
+    walk(g, x, sandHeight(x, 3), 3, moving ? t : 0, moving ? Math.PI / 2 : Math.PI * 0.85);
     if (flashRef.current) {
       const shooting = p > 0.42 && p < 0.6;
       const blink = shooting && Math.sin(p * 220) > 0.94;

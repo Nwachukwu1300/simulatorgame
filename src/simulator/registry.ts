@@ -8,7 +8,7 @@ export interface SimulatorDefinition {
   scene: LazyExoticComponent<ComponentType>;
 }
 
-// Bench and Idol still resolve to the Stage 3 TestScene until Stages 6-7.
+// Idol still resolves to the Stage 3 TestScene until its stage lands.
 const TestScene = () => import("./scenes/TestScene");
 
 export const SIMULATOR_REGISTRY: Record<SimulatorId, SimulatorDefinition> = {
@@ -17,6 +17,10 @@ export const SIMULATOR_REGISTRY: Record<SimulatorId, SimulatorDefinition> = {
     name: "Coconut Simulator",
     scene: lazy(() => import("./scenes/coconut/CoconutScene")),
   },
-  bench: { id: "bench", name: "Bench Simulator", scene: lazy(TestScene) },
+  bench: {
+    id: "bench",
+    name: "Bench Simulator",
+    scene: lazy(() => import("./scenes/bench/BenchScene")),
+  },
   idol: { id: "idol", name: "Jungle Idol Simulator", scene: lazy(TestScene) },
 };

@@ -127,6 +127,58 @@ export function birdChirp(volume = 0.08): void {
   }
 }
 
+/** One or two short dog barks: pitch-swept saw through a bandpass. */
+export function dogBark(volume = 0.12): void {
+  const c = ctx();
+  const out = output();
+  if (!c || !out) return;
+  const barks = Math.random() < 0.5 ? 1 : 2;
+  const base = 320 + Math.random() * 120;
+  for (let n = 0; n < barks; n++) {
+    const t0 = c.currentTime + n * (0.28 + Math.random() * 0.1);
+    const osc = c.createOscillator();
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(base * 1.4, t0);
+    osc.frequency.exponentialRampToValueAtTime(base * 0.8, t0 + 0.12);
+    const filter = c.createBiquadFilter();
+    filter.type = "bandpass";
+    filter.frequency.value = base * 2.2;
+    filter.Q.value = 1.2;
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(0, t0);
+    gain.gain.linearRampToValueAtTime(volume, t0 + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.16);
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(out);
+    osc.start(t0);
+    osc.stop(t0 + 0.2);
+  }
+}
+
+/** Distant chiming jingle (ice cream van). Simple pentatonic phrase. */
+export function vanJingle(volume = 0.05): void {
+  const c = ctx();
+  const out = output();
+  if (!c || !out) return;
+  // "Greensleeves-adjacent" but legally distinct.
+  const notes = [523.25, 659.25, 783.99, 659.25, 587.33, 523.25, 587.33, 659.25];
+  notes.forEach((freq, i) => {
+    const t0 = c.currentTime + i * 0.32;
+    const osc = c.createOscillator();
+    osc.type = "triangle";
+    osc.frequency.value = freq;
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(0, t0);
+    gain.gain.linearRampToValueAtTime(volume, t0 + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.6);
+    osc.connect(gain);
+    gain.connect(out);
+    osc.start(t0);
+    osc.stop(t0 + 0.65);
+  });
+}
+
 /** Low rumbling thunder burst, optionally delayed (distance). */
 export function thunder(delaySeconds = 0, volume = 0.5): void {
   const c = ctx();

@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { CanvasTexture, type Mesh, type MeshStandardMaterial } from "three";
 import { sandHeight } from "../terrain";
-import { easeInOut, useEventAnim, type EventChannel } from "./helpers";
+import { easeInOut, useEventAnim, type EventChannel } from "../../../systems/eventHelpers";
 import type { CoconutChannels } from "./coconutEvents";
 
 /** Crab scuttles sideways across the beach in front of the coconut. */

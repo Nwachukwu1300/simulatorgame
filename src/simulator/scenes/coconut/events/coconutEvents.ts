@@ -1,5 +1,5 @@
 import type { SimulatorEvent } from "../../../systems/EventSystem";
-import { channelEvent, makeChannel, type EventChannel } from "./helpers";
+import { channelEvent, makeChannel, type EventChannel } from "../../../systems/eventHelpers";
 
 /**
  * The Coconut Simulator event roster. Probabilities are per 5s roll

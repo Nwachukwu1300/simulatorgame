@@ -4,7 +4,7 @@ import { Beach } from "./Beach";
 import { BeachAudio } from "./BeachAudio";
 import { Coconut } from "./Coconut";
 import { Ocean } from "./Ocean";
-import { SkyLayer } from "./SkyLayer";
+import { SkyLayer } from "../../effects/SkyLayer";
 import { Vegetation } from "./Vegetation";
 import { createCoconutEvents } from "./events/coconutEvents";
 import { CommonActors } from "./events/CommonActors";

@@ -9,8 +9,8 @@ import {
   MeshBasicMaterial,
   Points,
 } from "three";
-import { useSimulatorStore } from "../../state/simulatorStore";
-import { getDaylightFactor } from "../../systems/TimeSystem";
+import { useSimulatorStore } from "../state/simulatorStore";
+import { getDaylightFactor } from "../systems/TimeSystem";
 
 /** Soft cloud sprite drawn once to a canvas. */
 function makeCloudTexture(): CanvasTexture {
@@ -36,7 +36,8 @@ function makeCloudTexture(): CanvasTexture {
 const CLOUD_COUNT = 10;
 
 /**
- * Drifting billboard clouds + a night-time star field.
+ * Drifting billboard clouds + a night-time star field. Shared by every
+ * simulator (promoted from the Coconut scene in Stage 5).
  * Cloud opacity rises with cloudy/rain/storm weather; stars fade in at night.
  */
 export function SkyLayer() {

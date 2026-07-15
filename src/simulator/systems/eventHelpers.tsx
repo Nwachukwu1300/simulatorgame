@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import type { Group } from "three";
-import type { SimulatorEvent } from "../../../systems/EventSystem";
+import type { SimulatorEvent } from "./EventSystem";
 
 /**
  * Bridges the declarative EventSystem (Stage 3) to visible 3D actors.
@@ -9,6 +9,8 @@ import type { SimulatorEvent } from "../../../systems/EventSystem";
  * Each event owns a mutable channel; the event's callbacks write
  * active/progress into it, and the actor component reads it every frame
  * to show/hide and animate itself — no React re-renders while running.
+ *
+ * Shared by every simulator (promoted from the Coconut scene in Stage 5).
  */
 export interface EventChannel {
   active: boolean;
