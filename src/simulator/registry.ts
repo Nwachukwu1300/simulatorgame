@@ -8,13 +8,15 @@ export interface SimulatorDefinition {
   scene: LazyExoticComponent<ComponentType>;
 }
 
-// Stage 3: every simulator resolves to the temporary TestScene.
-// Stages 4-7 replace these with the real environments, e.g.:
-//   scene: lazy(() => import("./scenes/coconut/BeachScene"))
+// Bench and Idol still resolve to the Stage 3 TestScene until Stages 6-7.
 const TestScene = () => import("./scenes/TestScene");
 
 export const SIMULATOR_REGISTRY: Record<SimulatorId, SimulatorDefinition> = {
-  coconut: { id: "coconut", name: "Coconut Simulator", scene: lazy(TestScene) },
+  coconut: {
+    id: "coconut",
+    name: "Coconut Simulator",
+    scene: lazy(() => import("./scenes/coconut/CoconutScene")),
+  },
   bench: { id: "bench", name: "Bench Simulator", scene: lazy(TestScene) },
   idol: { id: "idol", name: "Jungle Idol Simulator", scene: lazy(TestScene) },
 };

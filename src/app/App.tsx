@@ -560,6 +560,15 @@ function HUDScreen({
   const simTime = useSimulatorStore((s) => formatTimeOfDay(s.timeOfDay));
   const weather = useSimulatorStore((s) => s.weather);
 
+  // Escape pauses, like any serious game.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onPause();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onPause]);
+
   return (
     // Transparent overlay — the live SimulatorCanvas renders beneath it.
     <motion.div {...FADE} className="absolute inset-0">
@@ -571,14 +580,39 @@ function HUDScreen({
         }}
       />
 
-      {/* Pause */}
-      <button
-        onClick={onPause}
-        className="menu-item absolute top-10 right-10 text-[#4a3e32] text-[10px] z-10"
-        style={{ fontFamily: "'Raleway', sans-serif" }}
-      >
-        Pause
-      </button>
+      {/* Top-right: pause + live time/weather from the engine */}
+      <div className="absolute top-10 right-10 z-10 flex flex-col items-end gap-3">
+        <button
+          onClick={onPause}
+          className="menu-item text-[#4a3e32] text-[10px]"
+          style={{ fontFamily: "'Raleway', sans-serif" }}
+        >
+          Pause
+        </button>
+        <div className="w-5 h-px" style={{ background: `${sim.accentColor}40` }} />
+        <p
+          className="text-[13px] tracking-[0.2em]"
+          style={{
+            fontFamily: "'DM Mono', monospace",
+            color: "rgba(237,232,223,0.5)",
+            fontWeight: 300,
+            textShadow: "0 1px 12px rgba(8,7,6,0.6)",
+          }}
+        >
+          {simTime}
+        </p>
+        <p
+          className="text-[9px] tracking-[0.4em] uppercase"
+          style={{
+            fontFamily: "'DM Mono', monospace",
+            color: "rgba(237,232,223,0.32)",
+            fontWeight: 300,
+            textShadow: "0 1px 12px rgba(8,7,6,0.6)",
+          }}
+        >
+          {weather.charAt(0).toUpperCase() + weather.slice(1)}
+        </p>
+      </div>
 
       {/* HUD bottom-left */}
       <div className="absolute bottom-12 left-12 flex flex-col gap-2.5">
@@ -590,8 +624,6 @@ function HUDScreen({
           ["Status", "Existing"],
           ["Movement", "Unavailable"],
           ["Objective", "Continue Existing"],
-          ["Time", simTime],
-          ["Weather", weather.charAt(0).toUpperCase() + weather.slice(1)],
         ].map(([label, val]) => (
           <div key={label} className="flex items-baseline gap-5">
             <span

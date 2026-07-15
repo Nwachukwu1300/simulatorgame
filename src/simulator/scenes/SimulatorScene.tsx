@@ -15,6 +15,8 @@ export interface SimulatorSceneProps {
   events?: SimulatorEvent[];
   /** Weather the scene starts with. */
   initialWeather?: WeatherType;
+  /** Let the weather drift naturally over time. */
+  weatherCycle?: boolean;
   /** Fog for atmosphere/draw-distance masking: [color, near, far]. */
   fog?: [string, number, number];
 }
@@ -39,12 +41,13 @@ export function SimulatorScene({
   camera,
   events = [],
   initialWeather = "clear",
+  weatherCycle = false,
   fog,
 }: SimulatorSceneProps) {
   return (
     <>
       <CameraController {...camera} />
-      <WeatherSystem initial={initialWeather} />
+      <WeatherSystem initial={initialWeather} autoCycle={weatherCycle} />
       <EventSystem events={events} />
       {fog && <fog attach="fog" args={fog} />}
       {children}
