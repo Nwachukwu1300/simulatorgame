@@ -12,16 +12,18 @@ import { RainEffect } from "../effects/Rain";
  * scene's audio reacts through the store.
  */
 
-const CYCLE_WEIGHTS: [WeatherType, number][] = [
+export type WeatherWeights = [WeatherType, number][];
+
+const DEFAULT_WEIGHTS: WeatherWeights = [
   ["clear", 0.45],
   ["cloudy", 0.3],
   ["rain", 0.18],
   ["storm", 0.07],
 ];
 
-function pickNextWeather(current: WeatherType): WeatherType {
+function pickNextWeather(current: WeatherType, weights: WeatherWeights): WeatherType {
   let r = Math.random();
-  for (const [type, weight] of CYCLE_WEIGHTS) {
+  for (const [type, weight] of weights) {
     r -= weight;
     if (r <= 0) return type === current ? "clear" : type;
   }
@@ -31,9 +33,12 @@ function pickNextWeather(current: WeatherType): WeatherType {
 export function WeatherSystem({
   initial = "clear",
   autoCycle = false,
+  weights = DEFAULT_WEIGHTS,
 }: {
   initial?: WeatherType;
   autoCycle?: boolean;
+  /** Per-scene weather distribution (e.g. the jungle adds fog). */
+  weights?: WeatherWeights;
 }) {
   const untilChange = useRef(50 + Math.random() * 60);
 
@@ -48,7 +53,7 @@ export function WeatherSystem({
     untilChange.current -= delta;
     if (untilChange.current <= 0) {
       untilChange.current = 60 + Math.random() * 90;
-      setWeather(pickNextWeather(weather));
+      setWeather(pickNextWeather(weather, weights));
     }
   });
 

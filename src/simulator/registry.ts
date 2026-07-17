@@ -8,9 +8,6 @@ export interface SimulatorDefinition {
   scene: LazyExoticComponent<ComponentType>;
 }
 
-// Idol still resolves to the Stage 3 TestScene until its stage lands.
-const TestScene = () => import("./scenes/TestScene");
-
 export const SIMULATOR_REGISTRY: Record<SimulatorId, SimulatorDefinition> = {
   coconut: {
     id: "coconut",
@@ -22,5 +19,9 @@ export const SIMULATOR_REGISTRY: Record<SimulatorId, SimulatorDefinition> = {
     name: "Bench Simulator",
     scene: lazy(() => import("./scenes/bench/BenchScene")),
   },
-  idol: { id: "idol", name: "Jungle Idol Simulator", scene: lazy(TestScene) },
+  idol: {
+    id: "idol",
+    name: "Jungle Idol Simulator",
+    scene: lazy(() => import("./scenes/jungle/JungleScene")),
+  },
 };

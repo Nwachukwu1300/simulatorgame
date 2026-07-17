@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { CameraController, type CameraControllerProps } from "../engine/CameraController";
 import { EventSystem, type SimulatorEvent } from "../systems/EventSystem";
-import { WeatherSystem } from "../systems/WeatherSystem";
+import { WeatherSystem, type WeatherWeights } from "../systems/WeatherSystem";
 import type { WeatherType } from "../state/simulatorStore";
 
 export interface SimulatorSceneProps {
@@ -17,6 +17,8 @@ export interface SimulatorSceneProps {
   initialWeather?: WeatherType;
   /** Let the weather drift naturally over time. */
   weatherCycle?: boolean;
+  /** Per-scene weather distribution for the cycle. */
+  weatherWeights?: WeatherWeights;
   /** Fog for atmosphere/draw-distance masking: [color, near, far]. */
   fog?: [string, number, number];
 }
@@ -42,12 +44,13 @@ export function SimulatorScene({
   events = [],
   initialWeather = "clear",
   weatherCycle = false,
+  weatherWeights,
   fog,
 }: SimulatorSceneProps) {
   return (
     <>
       <CameraController {...camera} />
-      <WeatherSystem initial={initialWeather} autoCycle={weatherCycle} />
+      <WeatherSystem initial={initialWeather} autoCycle={weatherCycle} weights={weatherWeights} />
       <EventSystem events={events} />
       {fog && <fog attach="fog" args={fog} />}
       {children}

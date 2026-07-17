@@ -1,13 +1,13 @@
-import { useEffect, useRef } from "react";
-import { useFrame } from "@react-three/fiber";
-import { useSimulatorStore } from "../../state/simulatorStore";
-import { getDaylightFactor } from "../../systems/TimeSystem";
-import {
-  birdChirp,
-  ensureAmbientBed,
-  setAmbientLevel,
-  stopAllBeds,
-} from "../../engine/proceduralAudio";
+import { useRef } from "react";
+import { useAmbience } from "../../systems/ambience";
+import { birdChirp } from "../../engine/proceduralAudio";
+
+const BEDS = {
+  ocean: { frequency: 240, q: 0.4, lfoRate: 0.09, lfoDepth: 0.45 },
+  wind: { frequency: 700, q: 0.5, lfoRate: 0.05, lfoDepth: 0.6 },
+  rain: { frequency: 3200, q: 0.3 },
+  night: { frequency: 4600, q: 8, lfoRate: 11, lfoDepth: 0.8 },
+};
 
 /**
  * Beach soundscape (all procedural — see proceduralAudio.ts):
@@ -20,29 +20,11 @@ import {
 export function BeachAudio() {
   const nextChirp = useRef(3);
 
-  useEffect(() => stopAllBeds, []);
-
-  useFrame((_, delta) => {
-    const { paused, timeOfDay, weather } = useSimulatorStore.getState();
-
-    // Beds are created lazily so they exist once the AudioContext unlocks.
-    ensureAmbientBed("ocean", { frequency: 240, q: 0.4, lfoRate: 0.09, lfoDepth: 0.45 });
-    ensureAmbientBed("wind", { frequency: 700, q: 0.5, lfoRate: 0.05, lfoDepth: 0.6 });
-    ensureAmbientBed("rain", { frequency: 3200, q: 0.3 });
-    ensureAmbientBed("night", { frequency: 4600, q: 8, lfoRate: 11, lfoDepth: 0.8 });
-
-    if (paused) {
-      for (const bed of ["ocean", "wind", "rain", "night"]) setAmbientLevel(bed, 0);
-      return;
-    }
-
-    const daylight = getDaylightFactor(timeOfDay);
-    const storminess = weather === "storm" ? 1 : weather === "rain" ? 0.6 : 0;
-
-    setAmbientLevel("ocean", 0.32 + storminess * 0.18);
-    setAmbientLevel("wind", 0.1 + storminess * 0.25 + (weather === "cloudy" ? 0.06 : 0));
-    setAmbientLevel("rain", storminess * 0.4);
-    setAmbientLevel("night", daylight < 0.05 && storminess === 0 ? 0.045 : 0);
+  useAmbience(BEDS, ({ daylight, storminess, weather, delta }, setLevel) => {
+    setLevel("ocean", 0.32 + storminess * 0.18);
+    setLevel("wind", 0.1 + storminess * 0.25 + (weather === "cloudy" ? 0.06 : 0));
+    setLevel("rain", storminess * 0.4);
+    setLevel("night", daylight < 0.05 && storminess === 0 ? 0.045 : 0);
 
     // Sparse birdsong in daylight, silent in rain/storm
     if (daylight > 0.15 && storminess === 0) {

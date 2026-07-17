@@ -127,6 +127,71 @@ export function birdChirp(volume = 0.08): void {
   }
 }
 
+/** Distant monkey whoops: a short rising-falling hoot series. */
+export function monkeyCall(volume = 0.045): void {
+  const c = ctx();
+  const out = output();
+  if (!c || !out) return;
+  const hoots = 3 + Math.floor(Math.random() * 3);
+  const base = 480 + Math.random() * 160;
+  for (let n = 0; n < hoots; n++) {
+    const t0 = c.currentTime + n * 0.22;
+    const osc = c.createOscillator();
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(base * 0.8, t0);
+    osc.frequency.exponentialRampToValueAtTime(base * (1.15 + n * 0.05), t0 + 0.08);
+    osc.frequency.exponentialRampToValueAtTime(base * 0.75, t0 + 0.16);
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(0, t0);
+    gain.gain.linearRampToValueAtTime(volume, t0 + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.19);
+    osc.connect(gain);
+    gain.connect(out);
+    osc.start(t0);
+    osc.stop(t0 + 0.22);
+  }
+}
+
+/**
+ * Helicopter fly-by: low filtered noise pulsed by a rotor-rate LFO, swelling
+ * in and out over `seconds`. Self-cleaning one-shot.
+ */
+export function rotorPass(seconds = 12, volume = 0.14): void {
+  const c = ctx();
+  const out = output();
+  if (!c || !out) return;
+  const t0 = c.currentTime;
+  const source = c.createBufferSource();
+  source.buffer = getNoise(c);
+  source.loop = true;
+  const filter = c.createBiquadFilter();
+  filter.type = "lowpass";
+  filter.frequency.value = 220;
+  // Rotor thump: LFO chops the noise at blade-pass frequency
+  const chop = c.createGain();
+  chop.gain.value = 0.4;
+  const lfo = c.createOscillator();
+  lfo.type = "square";
+  lfo.frequency.value = 13;
+  const lfoGain = c.createGain();
+  lfoGain.gain.value = 0.6;
+  lfo.connect(lfoGain);
+  lfoGain.connect(chop.gain);
+  // Doppler-ish swell: quiet -> loud at midpoint -> quiet
+  const gain = c.createGain();
+  gain.gain.setValueAtTime(0.0001, t0);
+  gain.gain.exponentialRampToValueAtTime(volume, t0 + seconds / 2);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t0 + seconds);
+  source.connect(filter);
+  filter.connect(chop);
+  chop.connect(gain);
+  gain.connect(out);
+  lfo.start(t0);
+  source.start(t0);
+  source.stop(t0 + seconds + 0.1);
+  lfo.stop(t0 + seconds + 0.1);
+}
+
 /** One or two short dog barks: pitch-swept saw through a bandpass. */
 export function dogBark(volume = 0.12): void {
   const c = ctx();
