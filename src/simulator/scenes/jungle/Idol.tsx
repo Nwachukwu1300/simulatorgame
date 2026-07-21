@@ -1,8 +1,6 @@
-import { Suspense, useMemo } from "react";
+import { useMemo } from "react";
 import { CanvasTexture } from "three";
-import { useGLTF } from "@react-three/drei";
 import { SimulatorObject } from "../../objects/SimulatorObject";
-import { MODELS } from "../../utils/assetLoader";
 
 /** Weathered stone: grey speckle, water stains and hairline cracks. */
 function makeStoneTexture(): CanvasTexture {
@@ -61,46 +59,11 @@ function Moss({ spots }: { spots: [number, number, number, number][] }) {
 }
 
 /**
- * 3D idol model loaded from GLB file.
+ * The player. An idol carved before writing reached this valley. It has
+ * outlasted its makers, their language, and their god. It will outlast
+ * this session too.
  */
-function IdolModel() {
-  const { scene } = useGLTF(MODELS.stoneIdol);
-
-  return (
-    <SimulatorObject position={[0, 0, 0]} rotation={[0, -0.22, 0.025]}>
-      <primitive
-        object={scene.clone()}
-        scale={1}
-        castShadow
-        receiveShadow
-      />
-      {/* Keep moss overlay for extra detail */}
-      <Moss
-        spots={[
-          [0.3, 2.02, 0.1, 0.22],
-          [-0.28, 2.0, -0.15, 0.18],
-          [-0.4, 1.62, 0.1, 0.14],
-          [0.36, 1.3, -0.2, 0.16],
-          [-0.45, 0.95, 0.15, 0.15],
-          [0.4, 0.72, 0.3, 0.14],
-          [-0.55, 0.3, -0.4, 0.3],
-          [0.6, 0.28, 0.35, 0.26],
-          [0.1, 0.3, -0.6, 0.28],
-        ]}
-      />
-      {/* Offerings long since fossilised into the ground */}
-      <mesh position={[0, 0.02, 1.05]} rotation={[-Math.PI / 2, 0, 0]}>
-        <circleGeometry args={[0.9, 20]} />
-        <meshStandardMaterial color="#3d3423" roughness={1} transparent opacity={0.6} />
-      </mesh>
-    </SimulatorObject>
-  );
-}
-
-/**
- * Procedural idol fallback - the original box-based sculpture.
- */
-function ProceduralIdol() {
+export function Idol() {
   const stone = useMemo(makeStoneTexture, []);
   const stoneMat = <meshStandardMaterial map={stone} roughness={0.95} />;
   const stoneDark = <meshStandardMaterial map={stone} color="#8a887e" roughness={0.95} />;
@@ -185,15 +148,4 @@ function ProceduralIdol() {
       </mesh>
     </SimulatorObject>
   );
-}
-
-/**
- * The player. An idol carved before writing reached this valley. It has
- * outlasted its makers, their language, and their god. It will outlast
- * this session too.
- *
- * NOTE: Using procedural only for now - 3D model loading disabled
- */
-export function Idol() {
-  return <ProceduralIdol />;
 }
