@@ -30,3 +30,18 @@ npm-debug.log*
 .cache
 .parcel-cache
 .vite
+
+# Heavy assets (3D models, textures, HDRIs)
+# Download instructions in public/ASSETS_README.md
+public/models/**/*.glb
+public/models/**/*.gltf
+public/textures/**/*.jpg
+public/textures/**/*.jpeg
+public/textures/**/*.png
+public/textures/**/*.exr
+public/textures/**/*.blend
+public/hdri/**/*.hdr
+public/hdri/**/*.exr
+
+# Keep the nested Poly Haven folder structures out
+public/textures/**/*.blend/
