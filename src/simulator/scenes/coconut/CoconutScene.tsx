@@ -6,6 +6,7 @@ import { Coconut } from "./Coconut";
 import { Ocean } from "./Ocean";
 import { SkyLayer } from "../../effects/SkyLayer";
 import { Vegetation } from "./Vegetation";
+import { BeachScenery } from "./Scenery";
 import { createCoconutEvents } from "./events/coconutEvents";
 import { CommonActors } from "./events/CommonActors";
 import { SpecialActors } from "./events/SpecialActors";
@@ -31,6 +32,7 @@ export default function CoconutScene() {
       <Beach />
       <Ocean />
       <Vegetation />
+      <BeachScenery />
       <SkyLayer />
       <BeachAudio />
       <CommonActors channels={channels} />

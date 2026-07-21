@@ -8,9 +8,11 @@ import {
   Mesh,
   MeshBasicMaterial,
   Points,
+  Vector3,
 } from "three";
+import { Sky } from "@react-three/drei";
 import { useSimulatorStore } from "../state/simulatorStore";
-import { getDaylightFactor } from "../systems/TimeSystem";
+import { getDaylightFactor, getSunPosition } from "../systems/TimeSystem";
 
 /** Soft cloud sprite drawn once to a canvas. */
 function makeCloudTexture(): CanvasTexture {
@@ -36,8 +38,46 @@ function makeCloudTexture(): CanvasTexture {
 const CLOUD_COUNT = 10;
 
 /**
- * Drifting billboard clouds + a night-time star field. Shared by every
- * simulator (promoted from the Coconut scene in Stage 5).
+ * AtmosphericSky — procedural sky dome that follows the sun position.
+ * Uses Three.js Sky shader for realistic Rayleigh/Mie scattering.
+ *
+ * Sun position is calculated from TimeSystem and updated per-frame via
+ * direct uniform access for smooth day/night transitions.
+ */
+function AtmosphericSky() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const skyRef = useRef<any>(null);
+  const sunVec = useMemo(() => new Vector3(), []);
+
+  useFrame(() => {
+    const { timeOfDay } = useSimulatorStore.getState();
+
+    // Get sun position (normalized direction for sky shader)
+    getSunPosition(timeOfDay, 1, sunVec);
+
+    // Directly update the sky shader's sun position uniform
+    const sky = skyRef.current;
+    if (sky?.material?.uniforms?.sunPosition) {
+      sky.material.uniforms.sunPosition.value.copy(sunVec);
+    }
+  });
+
+  return (
+    <Sky
+      ref={skyRef}
+      distance={450000}
+      sunPosition={[0.5, 0.2, 0.8]}
+      mieCoefficient={0.005}
+      mieDirectionalG={0.8}
+      rayleigh={0.5}
+      turbidity={8}
+    />
+  );
+}
+
+/**
+ * Drifting billboard clouds + a night-time star field + atmospheric sky.
+ * Shared by every simulator (promoted from the Coconut scene in Stage 5).
  * Cloud opacity rises with cloudy/rain/storm weather; stars fade in at night.
  */
 export function SkyLayer() {
@@ -45,6 +85,7 @@ export function SkyLayer() {
   const cloudRefs = useRef<(Mesh | null)[]>([]);
   const starsRef = useRef<Points>(null);
   const group = useRef<Group>(null);
+  const skyOpacity = useRef(1);
 
   const clouds = useMemo(
     () =>
@@ -104,6 +145,10 @@ export function SkyLayer() {
 
   return (
     <group ref={group}>
+      {/* Procedural atmospheric sky */}
+      <AtmosphericSky />
+
+      {/* Billboard clouds */}
       {clouds.map((c, i) => (
         <mesh
           key={i}
@@ -121,6 +166,8 @@ export function SkyLayer() {
           />
         </mesh>
       ))}
+
+      {/* Star field for night time */}
       <points ref={starsRef} geometry={starGeometry}>
         <pointsMaterial size={0.7} color="#dfe6f0" transparent opacity={0} fog={false} sizeAttenuation={false} />
       </points>

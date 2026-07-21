@@ -1,8 +1,10 @@
-import { useRef } from "react";
+import { Suspense, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { AmbientLight, Color, DirectionalLight, Fog, HemisphereLight } from "three";
+import { Environment } from "@react-three/drei";
 import { useSimulatorStore, type WeatherType } from "../state/simulatorStore";
 import { getDaylightFactor, getSunPosition } from "../systems/TimeSystem";
+import { HDRI } from "../utils/assetLoader";
 
 // Colour keys the sky/sun lerp between across the day/night cycle.
 const SKY_DAY = new Color("#87a8c4");
@@ -76,6 +78,15 @@ export function LightingSystem() {
 
   return (
     <>
+      {/* HDRI environment for realistic ambient lighting and reflections */}
+      <Suspense fallback={null}>
+        <Environment
+          files={HDRI.beach}
+          background={false}
+          environmentIntensity={0.5}
+        />
+      </Suspense>
+
       <directionalLight
         ref={sunRef}
         castShadow
@@ -86,6 +97,9 @@ export function LightingSystem() {
         shadow-camera-right={25}
         shadow-camera-top={25}
         shadow-camera-bottom={-25}
+        shadow-bias={-0.0001}
+        shadow-radius={4}
+        shadow-blurSamples={8}
       />
       <hemisphereLight ref={hemiRef} args={["#b8c8dc", "#3a3028"]} />
       <ambientLight ref={ambientRef} />
