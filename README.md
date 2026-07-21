@@ -1,5 +1,4 @@
 
-'simulatorgame.vercel.app'
-
+simulatorgame.vercel.app
   
   
