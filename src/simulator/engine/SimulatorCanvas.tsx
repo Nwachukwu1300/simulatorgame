@@ -1,10 +1,11 @@
 import { Canvas } from "@react-three/fiber";
-import { ACESFilmicToneMapping } from "three";
+import { ACESFilmicToneMapping, VSMShadowMap, SRGBColorSpace } from "three";
 import { useSimulatorStore, type SimulatorId } from "../state/simulatorStore";
 import { AudioSystem } from "./AudioSystem";
 import { EnvironmentLoader } from "./EnvironmentLoader";
 import { LightingSystem } from "./LightingSystem";
 import { TimeSystem } from "../systems/TimeSystem";
+import { PostProcessingEffects } from "./PostProcessingEffects";
 
 /**
  * SimulatorCanvas — the single Three.js surface for the whole game.
@@ -30,14 +31,15 @@ export function SimulatorCanvas({ simulatorId }: { simulatorId: SimulatorId }) {
     <Canvas
       // key remount on quality change keeps gl settings (AA) consistent
       key={graphics}
-      shadows={high}
+      shadows={high ? { type: VSMShadowMap } : false}
       dpr={high ? [1, 2] : 1}
       frameloop={paused ? "demand" : "always"}
       camera={{ fov: 45, near: 0.1, far: 250, position: [3.2, 1.6, 4.2] }}
       gl={{
         antialias: high,
         toneMapping: ACESFilmicToneMapping,
-        toneMappingExposure: 1.1,
+        toneMappingExposure: 1.0,
+        outputColorSpace: SRGBColorSpace,
         powerPreference: "high-performance",
       }}
     >
@@ -45,6 +47,7 @@ export function SimulatorCanvas({ simulatorId }: { simulatorId: SimulatorId }) {
       <LightingSystem />
       <AudioSystem />
       <EnvironmentLoader simulatorId={simulatorId} />
+      {high && <PostProcessingEffects />}
     </Canvas>
   );
 }
