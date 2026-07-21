@@ -9,25 +9,11 @@ import type { Texture } from "three";
 export const MODELS = {
   // Main objects
   coconut: "/models/coconut/coconut.glb",
-  stoneIdol: "/models/jungle/stone_idol.glb",
 
   // Beach environment
   palmTree: "/models/environment/palm_tree.glb",
   rock: "/models/environment/rock.glb",
   rockLarge: "/models/environment/rock_large.glb",
-
-  // Jungle environment
-  jungleTree: "/models/jungle/jungle_tree.glb",
-  tropicalTree: "/models/jungle/tropical_tree.glb",
-  fern: "/models/jungle/fern.glb",
-  vine: "/models/jungle/vine.glb",
-
-  // Temple/Ruins
-  templeColumn: "/models/jungle/temple_column.glb",
-  templeBlock: "/models/jungle/temple_block.glb",
-  templeFacade: "/models/jungle/temple_facade.glb",
-  ancientTorch: "/models/jungle/ancient_torch.glb",
-  mossyBoulder: "/models/jungle/mossy_boulder.glb",
 
   // Beach props
   dock: "/models/props/dock.glb",

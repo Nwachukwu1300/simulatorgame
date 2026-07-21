@@ -1,8 +1,6 @@
-import { Suspense, useMemo } from "react";
-import { useGLTF } from "@react-three/drei";
+import { useMemo } from "react";
 import { DoubleSide, MeshStandardMaterial } from "three";
 import { jungleHeight } from "./terrain";
-import { MODELS } from "../../utils/assetLoader";
 
 // Additional tropical trees scattered around the clearing edges
 const TROPICAL_TREES: [number, number, number][] = [
@@ -34,28 +32,9 @@ const LARGE_FERNS: [number, number, number][] = [
 ];
 
 /**
- * 3D tropical tree loaded from GLB model.
+ * Procedural tropical tree.
  */
-function TropicalTree3D({ x, z, scale }: { x: number; z: number; scale: number }) {
-  const { scene } = useGLTF(MODELS.tropicalTree);
-  const y = jungleHeight(x, z);
-
-  return (
-    <group position={[x, y, z]} rotation={[0, Math.random() * Math.PI * 2, 0]}>
-      <primitive
-        object={scene.clone()}
-        scale={scale}
-        castShadow
-        receiveShadow
-      />
-    </group>
-  );
-}
-
-/**
- * Procedural tropical tree fallback.
- */
-function TropicalTreeProcedural({ x, z, scale }: { x: number; z: number; scale: number }) {
+function TropicalTree({ x, z, scale }: { x: number; z: number; scale: number }) {
   const y = jungleHeight(x, z);
   const height = 6 * scale;
 
@@ -84,15 +63,6 @@ function TropicalTreeProcedural({ x, z, scale }: { x: number; z: number; scale: 
       ))}
     </group>
   );
-}
-
-/**
- * Tropical tree with 3D model and procedural fallback.
- * NOTE: Using procedural only - 3D model is too large (52MB)
- */
-function TropicalTree(props: { x: number; z: number; scale: number }) {
-  // Skip 3D model loading - file is too large for web
-  return <TropicalTreeProcedural {...props} />;
 }
 
 /**
@@ -127,27 +97,9 @@ function FallenLog({ x, z, rotation, scale }: { x: number; z: number; rotation: 
 }
 
 /**
- * 3D fern cluster loaded from GLB model.
+ * Procedural fern cluster.
  */
-function Fern3D({ x, z, scale }: { x: number; z: number; scale: number }) {
-  const { scene } = useGLTF(MODELS.fern);
-  const y = jungleHeight(x, z);
-
-  return (
-    <group position={[x, y, z]} rotation={[0, Math.random() * Math.PI * 2, 0]}>
-      <primitive
-        object={scene.clone()}
-        scale={scale}
-        castShadow
-      />
-    </group>
-  );
-}
-
-/**
- * Procedural fern cluster fallback.
- */
-function FernProcedural({ x, z, scale }: { x: number; z: number; scale: number }) {
+function Fern({ x, z, scale }: { x: number; z: number; scale: number }) {
   const y = jungleHeight(x, z);
   const mat = useMemo(() => new MeshStandardMaterial({
     color: "#3a5a2e",
@@ -170,15 +122,6 @@ function FernProcedural({ x, z, scale }: { x: number; z: number; scale: number }
       ))}
     </group>
   );
-}
-
-/**
- * Fern cluster with 3D model and procedural fallback.
- * NOTE: Using procedural only - 3D model is too large (14.8MB)
- */
-function Fern(props: { x: number; z: number; scale: number }) {
-  // Skip 3D model loading - file is too large for web
-  return <FernProcedural {...props} />;
 }
 
 /**
@@ -226,7 +169,6 @@ const EXTRA_VINES: [number, number, number][] = [
 /**
  * Additional jungle scenery: tropical trees, fallen logs, fern clusters,
  * and hanging vines. These add depth and realism to the environment.
- * Uses 3D models when available with procedural fallbacks.
  */
 export function JungleScenery() {
   return (
