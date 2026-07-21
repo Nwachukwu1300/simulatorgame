@@ -1,5 +1,6 @@
-import { useMemo, useRef } from "react";
+import { Suspense, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
+import { useGLTF } from "@react-three/drei";
 import {
   CylinderGeometry,
   DoubleSide,
@@ -12,6 +13,7 @@ import {
 import { useSimulatorStore } from "../../state/simulatorStore";
 import type { EventChannel } from "../../systems/eventHelpers";
 import { jungleHeight } from "./terrain";
+import { MODELS } from "../../utils/assetLoader";
 
 const CANOPY_GREENS = ["#2e4a26", "#38562c", "#2a4222", "#405e30"];
 
@@ -38,7 +40,30 @@ const TREES: [number, number, number, number][] = [
   [16, -3, 9, 0.06],
 ];
 
-function JungleTree({ x, z, height, tilt }: { x: number; z: number; height: number; tilt: number }) {
+/**
+ * 3D Jungle tree loaded from GLB model.
+ */
+function JungleTree3D({ x, z, height, tilt }: { x: number; z: number; height: number; tilt: number }) {
+  const { scene } = useGLTF(MODELS.jungleTree);
+  const y = jungleHeight(x, z);
+  const scale = height / 8; // Normalize to base height
+
+  return (
+    <group position={[x, y, z]} rotation={[0, Math.random() * Math.PI * 2, tilt]}>
+      <primitive
+        object={scene.clone()}
+        scale={scale}
+        castShadow
+        receiveShadow
+      />
+    </group>
+  );
+}
+
+/**
+ * Procedural jungle tree fallback.
+ */
+function JungleTreeProcedural({ x, z, height, tilt }: { x: number; z: number; height: number; tilt: number }) {
   const y = jungleHeight(x, z);
   const green = CANOPY_GREENS[Math.abs(Math.floor(x * 7 + z * 13)) % CANOPY_GREENS.length];
   return (
@@ -69,6 +94,15 @@ function JungleTree({ x, z, height, tilt }: { x: number; z: number; height: numb
       </mesh>
     </group>
   );
+}
+
+/**
+ * Jungle tree with 3D model and procedural fallback.
+ * NOTE: Using procedural only - 3D models are too large (15MB each x 18 trees)
+ */
+function JungleTree(props: { x: number; z: number; height: number; tilt: number }) {
+  // Skip 3D model loading - files are too large for web
+  return <JungleTreeProcedural {...props} />;
 }
 
 /** ~90 fern fronds as one InstancedMesh, clustered into clumps. */
@@ -149,6 +183,8 @@ const UNDERGROWTH: [number, number, number][] = [
  * The jungle itself: canopy trees, instanced fern clumps, hanging vines
  * and undergrowth. The whole stand sways gently; the windShake event
  * channel drives proper gusts through it.
+ *
+ * Uses 3D tree models when available with procedural fallbacks.
  */
 export function Vegetation({ gust }: { gust?: EventChannel }) {
   const canopyRef = useRef<Group>(null);

@@ -9,13 +9,27 @@ import type { Texture } from "three";
 export const MODELS = {
   // Main objects
   coconut: "/models/coconut/coconut.glb",
+  stoneIdol: "/models/jungle/stone_idol.glb",
 
-  // Environment
+  // Beach environment
   palmTree: "/models/environment/palm_tree.glb",
   rock: "/models/environment/rock.glb",
   rockLarge: "/models/environment/rock_large.glb",
 
-  // Props
+  // Jungle environment
+  jungleTree: "/models/jungle/jungle_tree.glb",
+  tropicalTree: "/models/jungle/tropical_tree.glb",
+  fern: "/models/jungle/fern.glb",
+  vine: "/models/jungle/vine.glb",
+
+  // Temple/Ruins
+  templeColumn: "/models/jungle/temple_column.glb",
+  templeBlock: "/models/jungle/temple_block.glb",
+  templeFacade: "/models/jungle/temple_facade.glb",
+  ancientTorch: "/models/jungle/ancient_torch.glb",
+  mossyBoulder: "/models/jungle/mossy_boulder.glb",
+
+  // Beach props
   dock: "/models/props/dock.glb",
   beachHut: "/models/props/beach_hut.glb",
   umbrella: "/models/props/umbrella.glb",
@@ -39,10 +53,34 @@ export const TEXTURES = {
     displacement: "/textures/rock/displacement.png",
     // normal/roughness: procedural fallback (EXR not supported)
   },
+  // Jungle floor textures
+  jungleFloor: {
+    albedo: "/textures/jungle/floor_albedo.jpg",
+    roughness: "/textures/jungle/floor_roughness.jpg",
+    normal: "/textures/jungle/floor_normal.jpg",
+    ao: "/textures/jungle/floor_ao.jpg",
+  },
+  // Moss/leaves for variety
+  forestMoss: {
+    albedo: "/textures/jungle/moss_albedo.jpg",
+    roughness: "/textures/jungle/moss_roughness.jpg",
+  },
+  // Bark texture for trees
+  bark: {
+    albedo: "/textures/jungle/bark_albedo.jpg",
+    roughness: "/textures/jungle/bark_roughness.jpg",
+    normal: "/textures/jungle/bark_normal.jpg",
+  },
+  // Weathered stone for ruins (only albedo available, use procedural for others)
+  weatheredStone: {
+    albedo: "/textures/jungle/stone_albedo.jpg",
+    // roughness/normal/ao: procedural fallback (source files were EXR)
+  },
 } as const;
 
 export const HDRI = {
   beach: "/hdri/beach.hdr",
+  jungle: "/hdri/jungle.hdr",
 } as const;
 
 /**

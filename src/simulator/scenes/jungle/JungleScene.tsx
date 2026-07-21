@@ -6,6 +6,7 @@ import { Atmosphere } from "./Atmosphere";
 import { Ground } from "./Ground";
 import { Idol } from "./Idol";
 import { JungleAudio } from "./JungleAudio";
+import { JungleScenery } from "./JungleScenery";
 import { Mountains } from "./Mountains";
 import { Ruins } from "./Ruins";
 import { Vegetation } from "./Vegetation";
@@ -45,6 +46,7 @@ export default function JungleScene() {
       <Ground />
       <Vegetation gust={channels.windShake} />
       <Ruins />
+      <JungleScenery />
       <Mountains />
       <SkyLayer />
       <Atmosphere />

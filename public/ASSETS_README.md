@@ -1,6 +1,6 @@
 # Free Assets Guide
 
-This document explains where to download free 3D models and textures to achieve AAA-quality visuals in the Coconut Simulator.
+This document explains where to download free 3D models and textures to achieve AAA-quality visuals in the Simulator Collection (Coconut, Jungle Idol, and Bench simulators).
 
 ## Required Folder Structure
 
@@ -13,6 +13,17 @@ public/
 │   │   ├── palm_tree.glb
 │   │   ├── rock.glb
 │   │   └── rock_large.glb
+│   ├── jungle/
+│   │   ├── stone_idol.glb
+│   │   ├── jungle_tree.glb
+│   │   ├── tropical_tree.glb
+│   │   ├── fern.glb
+│   │   ├── vine.glb
+│   │   ├── temple_column.glb
+│   │   ├── temple_block.glb
+│   │   ├── temple_facade.glb
+│   │   ├── ancient_torch.glb
+│   │   └── mossy_boulder.glb
 │   └── props/
 │       ├── dock.glb
 │       ├── beach_hut.glb
@@ -24,13 +35,28 @@ public/
 │   │   ├── normal.jpg
 │   │   ├── roughness.jpg
 │   │   └── ao.jpg
-│   └── rock/
-│       ├── albedo.jpg
-│       ├── normal.jpg
-│       ├── roughness.jpg
-│       └── ao.jpg
+│   ├── rock/
+│   │   ├── albedo.jpg
+│   │   ├── normal.jpg
+│   │   ├── roughness.jpg
+│   │   └── ao.jpg
+│   └── jungle/
+│       ├── floor_albedo.jpg
+│       ├── floor_roughness.jpg
+│       ├── floor_normal.jpg
+│       ├── floor_ao.jpg
+│       ├── moss_albedo.jpg
+│       ├── moss_roughness.jpg
+│       ├── bark_albedo.jpg
+│       ├── bark_roughness.jpg
+│       ├── bark_normal.jpg
+│       ├── stone_albedo.jpg
+│       ├── stone_roughness.jpg
+│       ├── stone_normal.jpg
+│       └── stone_ao.jpg
 └── hdri/
     ├── beach.hdr
+    ├── jungle.hdr
     └── sunset.hdr
 ```
 
@@ -42,6 +68,9 @@ public/
 https://sketchfab.com/features/free-3d-models
 
 Search for and download (filter by "Downloadable" and CC license):
+
+**Beach/Coconut Simulator:**
+
 - "coconut" - Multiple options available
 - "palm tree low poly" or "palm tree realistic"
 - "beach rock" or "coastal rock"
@@ -49,6 +78,18 @@ Search for and download (filter by "Downloadable" and CC license):
 - "beach hut" or "tiki hut"
 - "beach umbrella"
 - "seashell"
+
+**Jungle Idol Simulator:**
+
+- "stone idol" or "ancient statue" or "tribal idol"
+- "jungle tree" or "rainforest tree"
+- "tropical tree" or "banana tree"
+- "fern" or "tropical fern"
+- "vine" or "jungle vine"
+- "temple column" or "ancient column" or "ruined pillar"
+- "temple ruins" or "ancient temple"
+- "torch" or "ancient torch"
+- "mossy boulder" or "forest rock"
 
 **Download in GLTF/GLB format** (best compatibility with Three.js)
 
@@ -76,12 +117,26 @@ Filter by "Free" - many beach/tropical assets available
 https://polyhaven.com/textures
 
 Download these specific textures:
+
 1. **Sand**: Search "sand" → "Sand 004" or "Beach Sand"
    - Download 2K resolution (good balance of quality/performance)
    - Get: Diffuse, Normal, Roughness, AO maps
 
 2. **Rock**: Search "rock" → "Rock 023" or coastal rocks
    - Same maps as above
+
+3. **Jungle Floor**: Search "forest floor" or "jungle ground"
+   - "Forest Floor 006" or "Leafy Ground"
+   - Get: Diffuse, Normal, Roughness, AO maps
+
+4. **Moss**: Search "moss" → "Moss 003" or similar
+   - Good for ground variation and rock coverage
+
+5. **Bark**: Search "bark" → "Bark 004" or "Tree Bark"
+   - For jungle tree trunks
+
+6. **Weathered Stone**: Search "stone" → "Stone Wall" or "Ancient Stone"
+   - For temple ruins and idol textures
 
 #### ambientCG (CC0)
 https://ambientcg.com/
@@ -98,6 +153,7 @@ https://polyhaven.com/hdris
 
 Recommended downloads:
 - **Beach**: "kloofendal_48d_partly_cloudy" or search "beach"
+- **Jungle**: "limpopo_golf_course" or "green_sanctuary" or search "forest"
 - **Sunset**: "venice_sunset" or similar
 - Download in 2K resolution (.hdr format)
 
@@ -151,6 +207,35 @@ Here are direct links to tested, compatible assets:
 
 ### Beach Props
 - Sketchfab: "Wooden dock", "Beach umbrella", "Tiki hut"
+
+---
+
+## Jungle Idol Simulator Assets
+
+### Stone Idol
+- Sketchfab: Search "stone idol", "tiki statue", "ancient statue", "tribal idol"
+- Look for weathered/mossy stone textures
+- Mayan or Polynesian style statues work well
+
+### Jungle Trees
+- Sketchfab: "Jungle tree", "Rainforest tree", "Tropical tree"
+- Quaternius: Nature pack includes suitable trees
+- Look for trees with buttress roots
+
+### Temple Ruins
+- Sketchfab: "Temple ruins", "Ancient column", "Ruined pillar"
+- Search "Mayan temple" or "Angkor" for inspiration
+- Look for overgrown/mossy versions
+
+### Ferns and Vegetation
+- Sketchfab: "Fern", "Tropical fern", "Forest undergrowth"
+- Poly Haven: Various plant models
+- Look for low-poly options for performance
+
+### Boulders and Rocks
+- Poly Haven: "Rock 023" or mossy boulder models
+- Sketchfab: "Forest rock", "Mossy boulder"
+- Same rocks as beach but with moss textures
 
 ## Texture Setup Tips
 
