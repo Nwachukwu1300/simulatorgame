@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useSimulatorStore } from "../state/simulatorStore";
+import { useProgressStore } from "../state/progress";
 
 /**
  * EventSystem — foundation for scripted background events (Stage 3/5).
@@ -120,5 +121,6 @@ export function EventSystem({ events, checkInterval = 5 }: EventSystemProps) {
 function start(rt: EventRuntime) {
   rt.active = true;
   rt.elapsed = 0;
+  useProgressStore.getState().recordEvent(rt.event.name);
   rt.event.onStart?.();
 }

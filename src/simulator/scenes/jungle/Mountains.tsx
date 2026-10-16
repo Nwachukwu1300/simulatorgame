@@ -1,6 +1,6 @@
 /**
  * Distant ridgeline glimpsed through the canopy gap and the haze.
- * Deliberately simple silhouettes — the fog does the painting.
+ * Rounded, forest-covered hills (sharp cones read as pyramids); the fog does the painting.
  */
 export function Mountains() {
   const peaks: [number, number, number, number][] = [
@@ -14,9 +14,10 @@ export function Mountains() {
   return (
     <>
       {peaks.map(([x, z, r, h], i) => (
-        <mesh key={i} position={[x, h / 2 - 2, z]}>
-          <coneGeometry args={[r, h, 7]} />
-          <meshStandardMaterial color="#4a5444" roughness={1} />
+        // Half-buried flattened sphere: a broad hill rather than a peak.
+        <mesh key={i} position={[x, -2, z]} scale={[r, h, r * 0.7]}>
+          <icosahedronGeometry args={[1, 1]} />
+          <meshStandardMaterial color="#2f4228" roughness={1} flatShading />
         </mesh>
       ))}
     </>

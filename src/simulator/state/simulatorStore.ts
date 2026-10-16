@@ -17,6 +17,8 @@ interface SimulatorState {
   activeSimulator: SimulatorId | null;
   /** True while the pause menu (or settings-from-pause) is open. Freezes the frameloop. */
   paused: boolean;
+  /** True once the active scene has mounted (its code-split chunk and top-level assets loaded). */
+  sceneReady: boolean;
 
   // ── Time ──────────────────────────────────────────────────────────────
   /** In-simulation time of day, in hours [0, 24). */
@@ -34,6 +36,7 @@ interface SimulatorState {
   startSimulator: (id: SimulatorId) => void;
   stopSimulator: () => void;
   setPaused: (paused: boolean) => void;
+  setSceneReady: (ready: boolean) => void;
   advanceTime: (deltaSeconds: number) => void;
   setTimeOfDay: (hours: number) => void;
   setWeather: (weather: WeatherType) => void;
@@ -43,15 +46,17 @@ interface SimulatorState {
 export const useSimulatorStore = create<SimulatorState>((set) => ({
   activeSimulator: null,
   paused: false,
+  sceneReady: false,
   timeOfDay: 10, // sims start mid-morning
   timeScale: 0.1,
   weather: "clear",
   graphics: "High",
 
   startSimulator: (id) =>
-    set({ activeSimulator: id, paused: false, timeOfDay: 10, weather: "clear" }),
-  stopSimulator: () => set({ activeSimulator: null, paused: false }),
+    set({ activeSimulator: id, paused: false, sceneReady: false, timeOfDay: 10, weather: "clear" }),
+  stopSimulator: () => set({ activeSimulator: null, paused: false, sceneReady: false }),
   setPaused: (paused) => set({ paused }),
+  setSceneReady: (sceneReady) => set({ sceneReady }),
   advanceTime: (deltaSeconds) =>
     set((s) => ({
       timeOfDay: (s.timeOfDay + deltaSeconds * s.timeScale) % 24,

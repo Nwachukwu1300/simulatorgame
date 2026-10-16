@@ -1,7 +1,9 @@
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import {
+  Color,
   CylinderGeometry,
+  IcosahedronGeometry,
   DoubleSide,
   Group,
   InstancedMesh,
@@ -132,6 +134,58 @@ function makeVines(): InstancedMesh {
   return mesh;
 }
 
+/**
+ * Canopy gaps (angle from the idol, radians) so far-off events stay visible:
+ * the waterfall at (22, -55) and the campfire smoke at (-24, -34) in events/SpecialActors.
+ */
+const CANOPY_GAPS = [Math.atan2(-55, 22), Math.atan2(-34, -24)];
+const GAP_HALF_WIDTH = 0.35; // wide enough that neighbouring crowns (up to ~2.5 wide) clear the sightline
+
+/**
+ * The forest beyond the clearing: rows of canopy crowns ringing the scene as
+ * one InstancedMesh. It closes off the open sky and the fog layers it into haze.
+ */
+function makeForestWall(): InstancedMesh {
+  const rows: [radius: number, count: number][] = [
+    [19, 34],
+    [27, 46],
+    [37, 60],
+  ];
+  const geo = new IcosahedronGeometry(1, 1);
+  const mat = new MeshStandardMaterial({ roughness: 1, flatShading: true });
+  const mesh = new InstancedMesh(geo, mat, rows.reduce((n, [, c]) => n + c, 0));
+  const dummy = new Object3D();
+  const color = new Color();
+  let i = 0;
+  for (const [radius, count] of rows) {
+    for (let k = 0; k < count; k++) {
+      // Deterministic jitter so the treeline is irregular but stable between visits
+      const j = Math.sin(i * 12.9898) * 0.5 + 0.5;
+      const a = (k / count) * Math.PI * 2 + j * 0.2;
+      const r = radius + (j - 0.5) * 5;
+      const x = Math.cos(a) * r;
+      const z = Math.sin(a) * r;
+      const angle = Math.atan2(z, x);
+      if (CANOPY_GAPS.some((g) => Math.abs(Math.atan2(Math.sin(angle - g), Math.cos(angle - g))) < GAP_HALF_WIDTH)) {
+        dummy.scale.setScalar(0); // leave this crown out: a window to the far ridge
+        dummy.updateMatrix();
+        mesh.setMatrixAt(i++, dummy.matrix);
+        continue;
+      }
+      const h = 5 + j * 6 + radius * 0.12;
+      dummy.position.set(x, jungleHeight(x, z) + h * 0.7, z);
+      dummy.rotation.set(0, a, 0);
+      dummy.scale.set(3 + j * 2, h, 3 + (1 - j) * 2);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(i, dummy.matrix);
+      mesh.setColorAt(i, color.set(CANOPY_GREENS[i % CANOPY_GREENS.length]));
+      i++;
+    }
+  }
+  mesh.instanceMatrix.needsUpdate = true;
+  return mesh;
+}
+
 const UNDERGROWTH: [number, number, number][] = [
   [-6.8, -5.5, 0.8],
   [5.8, -5.2, 0.7],
@@ -154,6 +208,7 @@ export function Vegetation({ gust }: { gust?: EventChannel }) {
   const canopyRef = useRef<Group>(null);
   const ferns = useMemo(makeFerns, []);
   const vines = useMemo(makeVines, []);
+  const forestWall = useMemo(makeForestWall, []);
   const fernsRef = useRef<Group>(null);
 
   useFrame(({ clock }) => {
@@ -174,6 +229,7 @@ export function Vegetation({ gust }: { gust?: EventChannel }) {
         ))}
         <primitive object={vines} />
       </group>
+      <primitive object={forestWall} />
       <group ref={fernsRef}>
         <primitive object={ferns} />
       </group>

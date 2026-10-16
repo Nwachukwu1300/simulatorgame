@@ -6,7 +6,6 @@ import { Coconut } from "./Coconut";
 import { Ocean } from "./Ocean";
 import { SkyLayer } from "../../effects/SkyLayer";
 import { Vegetation } from "./Vegetation";
-import { BeachScenery } from "./Scenery";
 import { createCoconutEvents } from "./events/coconutEvents";
 import { CommonActors } from "./events/CommonActors";
 import { SpecialActors } from "./events/SpecialActors";
@@ -22,7 +21,9 @@ export default function CoconutScene() {
 
   return (
     <SimulatorScene
-      camera={{ position: [2.7, 1.05, 3.1], target: [0, 0.35, -2.6], swayAmount: 0.05 }}
+      // Diagonal across the beach: sea on one side, the walkers' lanes (z 1.6-3.8) on the
+      // other. The old seaward view hid half the events behind the camera.
+      camera={{ position: [4.0, 1.1, 3.5], target: [1.5, 1.1, 2], swayAmount: 0.05 }}
       fog={["#b8ccd4", 45, 210]}
       initialWeather="clear"
       weatherCycle
@@ -32,7 +33,6 @@ export default function CoconutScene() {
       <Beach />
       <Ocean />
       <Vegetation />
-      <BeachScenery />
       <SkyLayer />
       <BeachAudio />
       <CommonActors channels={channels} />

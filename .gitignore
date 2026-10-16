@@ -45,3 +45,6 @@ public/hdri/**/*.exr
 
 # Keep the nested Poly Haven folder structures out
 public/textures/**/*.blend/
+
+# Local Playwright screenshots/logs
+.playwright-mcp

@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useProgress } from "@react-three/drei";
 import { motion, AnimatePresence, type MotionProps } from "motion/react";
 import { SimulatorCanvas } from "@/simulator/engine/SimulatorCanvas";
 import {
@@ -6,8 +7,10 @@ import {
   formatTimeOfDay,
   type SimulatorId,
 } from "@/simulator/state/simulatorStore";
+import { useProgressStore, formatDuration } from "@/simulator/state/progress";
+import { ACHIEVEMENTS } from "@/simulator/state/achievements";
 
-type Screen = "main" | "settings" | "simulator-select" | "loading" | "hud" | "pause";
+type Screen = "main" | "settings" | "simulator-select" | "loading" | "hud" | "pause" | "quit";
 type SimType = SimulatorId;
 
 interface SimData {
@@ -25,7 +28,7 @@ const SIMS: SimData[] = [
     title: "Coconut Simulator",
     subtitle: "Tropical Coast — Latitude 8.5°N",
     desc: "The tide does not ask your permission.",
-    img: "https://images.unsplash.com/photo-1587944301497-9b2b7c4358fd?w=1920&h=1080&fit=crop&auto=format",
+    img: "/menu/coconut.jpg",
     accentColor: "#c47a35",
   },
   {
@@ -33,7 +36,7 @@ const SIMS: SimData[] = [
     title: "Bench Simulator",
     subtitle: "Meridian Park — Autumn, Year Four",
     desc: "Seasons change. You endure.",
-    img: "https://images.unsplash.com/photo-1561745673-b1d2a1cdf765?w=1920&h=1080&fit=crop&auto=format",
+    img: "/menu/bench.jpg",
     accentColor: "#4a7c45",
   },
   {
@@ -41,7 +44,7 @@ const SIMS: SimData[] = [
     title: "Jungle Idol Simulator",
     subtitle: "The Forgotten Temple — Estimated Age: 2,400 Years",
     desc: "The jungle does not remember your name.",
-    img: "https://images.unsplash.com/photo-1698063261670-72d63ee5c1a3?w=1920&h=1080&fit=crop&auto=format",
+    img: "/menu/idol.jpg",
     accentColor: "#8a5c2a",
   },
 ];
@@ -55,14 +58,44 @@ const TIPS = [
   "The world continues to move. You are not required to respond.",
 ];
 
-const HERO_IMG =
-  "https://images.unsplash.com/photo-1477346611705-65d1883cee1e?w=1920&h=1080&fit=crop&auto=format";
+// Menu art is captured from the game's own scenes (public/menu), so the menus show
+// the game the player will actually get and nothing is hotlinked.
+const SLIDE_MS = 9000;
 
+/** Slowly drifting crossfade through all three simulators: the brief's "blended glimpse". */
+// Graded dark and muted (the brief's "dark base") so the menu type stays readable over bright renders.
+function MenuBackdrop({ filter = "brightness(0.5) saturate(0.75)" }: { filter?: string }) {
+  const [shown, setShown] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setShown((n) => (n + 1) % SIMS.length), SLIDE_MS);
+    return () => clearInterval(t);
+  }, []);
+  return (
+    <div className="absolute inset-0 overflow-hidden bg-[#080706]" style={{ filter }}>
+      {SIMS.map((sim, n) => (
+        <img
+          key={sim.id}
+          src={sim.img}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{
+            opacity: n === shown ? 1 : 0,
+            transition: "opacity 2.5s ease-in-out",
+            animation: "driftPan 50s ease-in-out infinite",
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+// Screens swap one at a time (AnimatePresence mode="wait"), so the exit is kept short:
+// the old screen gets out of the way quickly and the new one arrives unhurried.
+const FADE_EASE = [0.25, 0.1, 0.25, 1] as const;
 const FADE: MotionProps = {
   initial: { opacity: 0, scale: 1.025 },
-  animate: { opacity: 1, scale: 1 },
-  exit: { opacity: 0, scale: 0.975 },
-  transition: { duration: 0.85, ease: [0.25, 0.1, 0.25, 1] },
+  animate: { opacity: 1, scale: 1, transition: { duration: 0.55, ease: FADE_EASE } },
+  exit: { opacity: 0, scale: 0.985, transition: { duration: 0.3, ease: FADE_EASE } },
 };
 
 // ─── Shared atmosphere layers ─────────────────────────────────────────────────
@@ -97,22 +130,33 @@ function GradientTop() {
   );
 }
 
+// One back control for every screen: same place, same look. Escape is handled in App.
+function BackButton({ onBack, label = "Back" }: { onBack: () => void; label?: string }) {
+  return (
+    <button
+      onClick={onBack}
+      className="menu-item absolute top-10 left-12 z-20 text-[#ede8df]/70 text-[10px]"
+      style={{ fontFamily: "'Raleway', sans-serif", textShadow: "0 1px 8px rgba(8,7,6,0.8)" }}
+    >
+      ← {label}
+    </button>
+  );
+}
+
 // ─── Main Menu ────────────────────────────────────────────────────────────────
 
-function MainMenu({ onPlay, onSettings }: { onPlay: () => void; onSettings: () => void }) {
+function MainMenu({
+  onPlay,
+  onSettings,
+  onQuit,
+}: {
+  onPlay: () => void;
+  onSettings: () => void;
+  onQuit: () => void;
+}) {
   return (
     <motion.div {...FADE} className="absolute inset-0">
-      <div className="absolute inset-0 overflow-hidden bg-[#080706]">
-        <img
-          src={HERO_IMG}
-          alt="Cinematic landscape"
-          className="w-full h-full object-cover"
-          style={{
-            animation: "driftPan 50s ease-in-out infinite",
-            transformOrigin: "center center",
-          }}
-        />
-      </div>
+      <MenuBackdrop />
       <Vignette />
       <GradientBottom />
       <GradientTop />
@@ -147,7 +191,7 @@ function MainMenu({ onPlay, onSettings }: { onPlay: () => void; onSettings: () =
             {[
               { label: "Play", action: onPlay },
               { label: "Settings", action: onSettings },
-              { label: "Quit", action: () => {} },
+              { label: "Quit", action: onQuit },
             ].map(({ label, action }) => (
               <button
                 key={label}
@@ -249,16 +293,7 @@ function SettingsMenu({
   return (
     <motion.div {...FADE} className="absolute inset-0">
       {/* Over the live simulator, blur the frozen 3D frame instead of a photo */}
-      {!overSimulator && (
-        <div className="absolute inset-0 overflow-hidden bg-[#080706]">
-          <img
-            src={HERO_IMG}
-            alt="Background"
-            className="w-full h-full object-cover"
-            style={{ filter: "blur(14px) brightness(0.5)", transform: "scale(1.06)" }}
-          />
-        </div>
-      )}
+      {!overSimulator && <MenuBackdrop filter="blur(14px) brightness(0.4) saturate(0.75)" />}
       <div
         className="absolute inset-0"
         style={{
@@ -304,14 +339,8 @@ function SettingsMenu({
           />
         </div>
 
-        <button
-          onClick={onBack}
-          className="menu-item mt-20 text-[#4a3e32] text-[10px] w-fit text-left"
-          style={{ fontFamily: "'Raleway', sans-serif" }}
-        >
-          ← Return
-        </button>
       </div>
+      <BackButton onBack={onBack} />
     </motion.div>
   );
 }
@@ -331,7 +360,7 @@ function SimulatorSelect({
     <motion.div {...FADE} className="absolute inset-0 bg-[#080706]">
       {/* Header overlay */}
       <div
-        className="absolute inset-x-0 top-0 h-44 z-10 flex items-end px-20 pb-9 md:px-28"
+        className="absolute inset-x-0 top-0 h-56 z-10 flex items-end px-20 pb-9 md:px-28"
         style={{ background: "linear-gradient(to bottom, rgba(8,7,6,0.97) 0%, transparent 100%)" }}
       >
         <div className="flex items-end justify-between w-full">
@@ -353,15 +382,9 @@ function SimulatorSelect({
               Choose Your Simulator
             </h2>
           </div>
-          <button
-            onClick={onBack}
-            className="menu-item text-[#4a3e32] text-[10px] self-end"
-            style={{ fontFamily: "'Raleway', sans-serif" }}
-          >
-            ← Back
-          </button>
         </div>
       </div>
+      <BackButton onBack={onBack} />
 
       {/* Cards row */}
       <div className="absolute inset-0 flex">
@@ -373,9 +396,20 @@ function SimulatorSelect({
               flex: hovered === sim.id ? 1.35 : 1,
               transition: "flex 0.7s cubic-bezier(0.25, 0.1, 0.25, 1)",
             }}
+            role="button"
+            tabIndex={0}
+            aria-label={`${sim.title}. ${sim.desc}`}
             onMouseEnter={() => setHovered(sim.id)}
             onMouseLeave={() => setHovered(null)}
+            onFocus={() => setHovered(sim.id)}
+            onBlur={() => setHovered(null)}
             onClick={() => onSelect(sim.id)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onSelect(sim.id);
+              }
+            }}
           >
             <img
               src={sim.img}
@@ -462,15 +496,39 @@ function SimulatorSelect({
 
 // ─── Loading Screen ───────────────────────────────────────────────────────────
 
+const MIN_LOADING_MS = 2000;
+
 function LoadingScreen({
   sim,
-  progress,
-  tip,
+  onDone,
+  onCancel,
 }: {
   sim: SimData;
-  progress: number;
-  tip: string;
+  onDone: () => void;
+  onCancel: () => void;
 }) {
+  const [tip] = useState(() => TIPS[Math.floor(Math.random() * TIPS.length)]);
+  // Real progress: drei tracks every model/texture/HDRI through three's loading manager.
+  const { active, progress: loaded } = useProgress();
+  const sceneReady = useSimulatorStore((s) => s.sceneReady);
+  const done = sceneReady && !active;
+
+  // The manager's ratio dips when new files queue up; never let the bar go backwards.
+  const shown = useRef(0);
+  shown.current = Math.max(shown.current, done ? 100 : Math.min(loaded, 99));
+  const progress = shown.current;
+
+  const [minTimeUp, setMinTimeUp] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setMinTimeUp(true), MIN_LOADING_MS);
+    return () => clearTimeout(t);
+  }, []);
+  useEffect(() => {
+    if (!done || !minTimeUp) return;
+    const t = setTimeout(onDone, 700); // let the full bar register
+    return () => clearTimeout(t);
+  }, [done, minTimeUp, onDone]);
+
   return (
     <motion.div {...FADE} className="absolute inset-0 bg-[#080706]">
       <img
@@ -531,6 +589,7 @@ function LoadingScreen({
           </div>
         </div>
       </div>
+      <BackButton onBack={onCancel} />
     </motion.div>
   );
 }
@@ -547,27 +606,19 @@ function HUDScreen({
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
-    const t = setInterval(() => setElapsed((e) => e + 1), 1000);
+    const t = setInterval(() => {
+      setElapsed((e) => e + 1);
+      useProgressStore.getState().addTime(sim.id, 1);
+    }, 1000);
     return () => clearInterval(t);
-  }, []);
-
-  const hh = String(Math.floor(elapsed / 3600)).padStart(2, "0");
-  const mm = String(Math.floor((elapsed % 3600) / 60)).padStart(2, "0");
-  const ss = String(elapsed % 60).padStart(2, "0");
+  }, [sim.id]);
 
   // Live values from the simulator engine (re-renders only when the
   // formatted string / weather actually change, not every frame).
   const simTime = useSimulatorStore((s) => formatTimeOfDay(s.timeOfDay));
+  // The HUD floats over bright sand and sky, so every line needs its own shadow.
+  const hudShadow = "0 1px 3px rgba(8,7,6,0.85), 0 0 14px rgba(8,7,6,0.6)";
   const weather = useSimulatorStore((s) => s.weather);
-
-  // Escape pauses, like any serious game.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onPause();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onPause]);
 
   return (
     // Transparent overlay — the live SimulatorCanvas renders beneath it.
@@ -584,8 +635,8 @@ function HUDScreen({
       <div className="absolute top-10 right-10 z-10 flex flex-col items-end gap-3">
         <button
           onClick={onPause}
-          className="menu-item text-[#4a3e32] text-[10px]"
-          style={{ fontFamily: "'Raleway', sans-serif" }}
+          className="menu-item text-[#ede8df]/70 text-[10px]"
+          style={{ fontFamily: "'Raleway', sans-serif", textShadow: hudShadow }}
         >
           Pause
         </button>
@@ -594,9 +645,9 @@ function HUDScreen({
           className="text-[13px] tracking-[0.2em]"
           style={{
             fontFamily: "'DM Mono', monospace",
-            color: "rgba(237,232,223,0.5)",
+            color: "rgba(237,232,223,0.75)",
             fontWeight: 300,
-            textShadow: "0 1px 12px rgba(8,7,6,0.6)",
+            textShadow: hudShadow,
           }}
         >
           {simTime}
@@ -605,9 +656,9 @@ function HUDScreen({
           className="text-[9px] tracking-[0.4em] uppercase"
           style={{
             fontFamily: "'DM Mono', monospace",
-            color: "rgba(237,232,223,0.32)",
+            color: "rgba(237,232,223,0.55)",
             fontWeight: 300,
-            textShadow: "0 1px 12px rgba(8,7,6,0.6)",
+            textShadow: hudShadow,
           }}
         >
           {weather.charAt(0).toUpperCase() + weather.slice(1)}
@@ -630,8 +681,9 @@ function HUDScreen({
               className="text-[9px] tracking-[0.35em] uppercase w-20"
               style={{
                 fontFamily: "'DM Mono', monospace",
-                color: "rgba(90,78,66,0.7)",
+                color: "rgba(237,232,223,0.5)",
                 fontWeight: 300,
+                textShadow: hudShadow,
               }}
             >
               {label}
@@ -640,8 +692,9 @@ function HUDScreen({
               className="text-[11px] tracking-[0.12em]"
               style={{
                 fontFamily: "'DM Mono', monospace",
-                color: "rgba(237,232,223,0.38)",
+                color: "rgba(237,232,223,0.8)",
                 fontWeight: 300,
+                textShadow: hudShadow,
               }}
             >
               {val}
@@ -656,19 +709,20 @@ function HUDScreen({
           className="text-[9px] tracking-[0.3em]"
           style={{
             fontFamily: "'DM Mono', monospace",
-            color: "rgba(58,46,34,0.6)",
+            color: "rgba(237,232,223,0.45)",
             fontWeight: 300,
+            textShadow: hudShadow,
           }}
         >
-          {hh}:{mm}:{ss}
+          {formatDuration(elapsed)}
         </p>
       </div>
 
       {/* Simulator name top-left */}
       <div className="absolute top-10 left-12">
         <p
-          className="text-[#2a2018] text-[9px] tracking-[0.5em] uppercase"
-          style={{ fontFamily: "'Raleway', sans-serif" }}
+          className="text-[#ede8df]/60 text-[9px] tracking-[0.5em] uppercase"
+          style={{ fontFamily: "'Raleway', sans-serif", textShadow: hudShadow }}
         >
           {sim.title}
         </p>
@@ -738,6 +792,121 @@ function PauseMenu({
           ))}
         </nav>
       </div>
+
+      <ExistenceRecord />
+    </motion.div>
+  );
+}
+
+function ExistenceRecord() {
+  const secondsBySim = useProgressStore((s) => s.secondsBySim);
+  const eventsWitnessed = useProgressStore((s) => s.eventsWitnessed);
+  const unlocked = useProgressStore((s) => s.unlocked);
+  const total = secondsBySim.coconut + secondsBySim.bench + secondsBySim.idol;
+  const earned = ACHIEVEMENTS.filter((a) => unlocked.includes(a.id));
+
+  const label = "text-[9px] tracking-[0.35em] uppercase text-[rgba(237,232,223,0.4)]";
+  const value = "text-[11px] tracking-[0.12em] text-[rgba(237,232,223,0.8)]";
+
+  return (
+    <div
+      className="absolute right-20 md:right-28 top-1/2 -translate-y-1/2 w-72 hidden md:flex flex-col gap-3"
+      style={{ fontFamily: "'DM Mono', monospace", fontWeight: 300 }}
+    >
+      <p className="text-[#4a3e32] text-[10px] tracking-[0.55em] uppercase mb-2" style={{ fontFamily: "'Raleway', sans-serif" }}>
+        Record of Existence
+      </p>
+      {[
+        ["Time Existed", formatDuration(total)],
+        ["Events Witnessed", String(eventsWitnessed)],
+        ["Movement", "0 metres"],
+        ["Achievements", `${earned.length} / ${ACHIEVEMENTS.length}`],
+      ].map(([l, v]) => (
+        <div key={l} className="flex justify-between items-baseline">
+          <span className={label}>{l}</span>
+          <span className={value}>{v}</span>
+        </div>
+      ))}
+      {earned.length > 0 && (
+        <div className="mt-4 pt-4 border-t border-[rgba(196,122,53,0.15)] flex flex-col gap-2">
+          {earned.map((a) => (
+            <p key={a.id} className={value} title={a.desc}>
+              {a.title}
+            </p>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Achievement Toast ───────────────────────────────────────────────────────
+
+function AchievementToast() {
+  const toast = useProgressStore((s) => s.toasts[0]);
+  const dismiss = useProgressStore((s) => s.dismissToast);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(dismiss, 5500);
+    return () => clearTimeout(t);
+  }, [toast, dismiss]);
+
+  return (
+    <AnimatePresence>
+      {toast && (
+        <motion.div
+          key={toast.id}
+          role="status"
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.9, ease: [0.25, 0.1, 0.25, 1] }}
+          className="absolute top-10 left-1/2 -translate-x-1/2 z-40 px-8 py-5 text-center pointer-events-none"
+          style={{ background: "rgba(8,7,6,0.82)", border: "1px solid rgba(196,122,53,0.25)", backdropFilter: "blur(6px)" }}
+        >
+          <p className="text-[#c47a35] text-[9px] tracking-[0.5em] uppercase mb-2" style={{ fontFamily: "'Raleway', sans-serif" }}>
+            Achievement Unlocked
+          </p>
+          <p className="text-[#ede8df] text-xl" style={{ fontFamily: "'Libre Caslon Display', serif", letterSpacing: "0.03em" }}>
+            {toast.title}
+          </p>
+          <p className="text-[#8a7d6e] text-xs mt-1.5" style={{ fontFamily: "'Raleway', sans-serif", fontWeight: 300 }}>
+            {toast.desc}
+          </p>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+// ─── Quit Screen ──────────────────────────────────────────────────────────────
+
+function QuitScreen({ onReturn }: { onReturn: () => void }) {
+  return (
+    <motion.div
+      {...FADE}
+      className="absolute inset-0 flex flex-col items-center justify-center gap-8 text-center"
+    >
+      <Vignette />
+      <div className="w-10 h-px" style={{ background: "rgba(196,122,53,0.35)" }} />
+      <h2
+        className="text-[#ede8df] font-normal"
+        style={{
+          fontFamily: "'Libre Caslon Display', serif",
+          fontSize: "clamp(2rem, 4vw, 3.5rem)",
+          letterSpacing: "0.04em",
+        }}
+      >
+        Thank You for Existing
+      </h2>
+      <p
+        className="text-[#8a7d6e] text-sm"
+        style={{ fontFamily: "'Raleway', sans-serif", fontWeight: 300 }}
+      >
+        You may now close this tab. Your object will remain where you left it.
+      </p>
+      <BackButton onBack={onReturn} />
     </motion.div>
   );
 }
@@ -841,30 +1010,16 @@ export default function App() {
   const [selectedSim, setSelectedSim] = useState<SimType>("coconut");
   const [showArcadeWarning, setShowArcadeWarning] = useState(false);
   const [mode, setMode] = useState<"Realistic" | "Arcade">("Realistic");
-  const [loadingProgress, setLoadingProgress] = useState(0);
-  const [tipIndex, setTipIndex] = useState(0);
 
   // Graphics lives in the simulator store so the engine can react to it.
   const graphics = useSimulatorStore((s) => s.graphics);
   const setGraphics = useSimulatorStore((s) => s.setGraphics);
 
-  useEffect(() => {
-    if (screen === "loading") {
-      setLoadingProgress(0);
-      setTipIndex(Math.floor(Math.random() * TIPS.length));
-      const interval = setInterval(() => {
-        setLoadingProgress((p) => {
-          if (p >= 100) {
-            clearInterval(interval);
-            setTimeout(() => setScreen("hud"), 700);
-            return 100;
-          }
-          return Math.min(p + Math.random() * 3.5 + 0.5, 100);
-        });
-      }, 90);
-      return () => clearInterval(interval);
-    }
-  }, [screen]);
+  const finishLoading = useCallback(() => setScreen("hud"), []);
+  const cancelLoading = useCallback(() => {
+    useSimulatorStore.getState().stopSimulator();
+    setScreen("simulator-select");
+  }, []);
 
   const goSettings = (from: Screen) => {
     setSettingsReturn(from);
@@ -901,6 +1056,37 @@ export default function App() {
     useSimulatorStore.getState().stopSimulator();
     setScreen("main");
   };
+
+  // Browsers only let a page close tabs it opened itself; otherwise show a farewell.
+  const handleQuitGame = () => {
+    window.close();
+    setScreen("quit");
+  };
+
+  const closeArcadeWarning = () => {
+    setShowArcadeWarning(false);
+    setMode("Realistic");
+  };
+
+  // Escape always acts on the current screen. A single handler here (rather than one per
+  // screen) matters because screens stay mounted while fading out and would also react.
+  const onEscape: Partial<Record<Screen, () => void>> = {
+    hud: handlePause,
+    pause: handleResume,
+    settings: () => setScreen(settingsReturn),
+    "simulator-select": () => setScreen("main"),
+    loading: cancelLoading,
+    quit: () => setScreen("main"),
+  };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (showArcadeWarning) closeArcadeWarning();
+      else onEscape[screen]?.();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
 
   const currentSim = SIMS.find((s) => s.id === selectedSim) ?? SIMS[0];
 
@@ -959,6 +1145,7 @@ export default function App() {
             key="main"
             onPlay={() => setScreen("simulator-select")}
             onSettings={() => goSettings("main")}
+            onQuit={handleQuitGame}
           />
         )}
         {screen === "settings" && (
@@ -983,8 +1170,8 @@ export default function App() {
           <LoadingScreen
             key="loading"
             sim={currentSim}
-            progress={Math.min(loadingProgress, 100)}
-            tip={TIPS[tipIndex]}
+            onDone={finishLoading}
+            onCancel={cancelLoading}
           />
         )}
         {screen === "hud" && (
@@ -998,16 +1185,18 @@ export default function App() {
             onQuit={handleQuitToMenu}
           />
         )}
+        {screen === "quit" && (
+          <QuitScreen key="quit" onReturn={() => setScreen("main")} />
+        )}
       </AnimatePresence>
+
+      <AchievementToast />
 
       <AnimatePresence>
         {showArcadeWarning && (
           <ArcadeWarning
             key="arcade-warning"
-            onClose={() => {
-              setShowArcadeWarning(false);
-              setMode("Realistic");
-            }}
+            onClose={closeArcadeWarning}
           />
         )}
       </AnimatePresence>

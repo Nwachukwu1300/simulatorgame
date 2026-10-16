@@ -1,10 +1,8 @@
-import { Suspense, useRef } from "react";
+import { useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { AmbientLight, Color, DirectionalLight, Fog, HemisphereLight } from "three";
-import { Environment } from "@react-three/drei";
 import { useSimulatorStore, type WeatherType } from "../state/simulatorStore";
 import { getDaylightFactor, getSunPosition } from "../systems/TimeSystem";
-import { HDRI } from "../utils/assetLoader";
 
 // Colour keys the sky/sun lerp between across the day/night cycle.
 const SKY_DAY = new Color("#87a8c4");
@@ -15,6 +13,11 @@ const SUN_DUSK = new Color("#ff9a4a");
 
 const OVERCAST = new Color("#6e7681");
 const scratch = new Color();
+
+/** Each scene's own fog colour (its daytime haze), captured before we start recolouring it. */
+const sceneTints = new WeakMap<Fog, Color>();
+/** How strongly a scene's haze colour shows through at full daylight. */
+const TINT_STRENGTH = 0.7;
 
 /** How much each weather type dims the sun and greys the sky. */
 const WEATHER_DIM: Record<WeatherType, number> = {
@@ -31,7 +34,8 @@ const WEATHER_DIM: Record<WeatherType, number> = {
  * - Directional "sun" light driven by the TimeSystem clock (position,
  *   intensity and colour follow the time of day).
  * - Hemisphere + ambient fill so night scenes never go fully black.
- * - Scene background colour lerps between day, dusk and night.
+ * - Scene background colour lerps between day, dusk and night, pulled toward
+ *   the scene's own fog colour in daylight (green jungle haze, warm park haze).
  *
  * Lights are mutated inside useFrame (no React re-renders per frame).
  */
@@ -67,6 +71,10 @@ export function LightingSystem() {
       .lerp(SKY_DAY, daylight)
       .lerp(SKY_DUSK, duskiness * 0.45 * d)
       .lerp(OVERCAST, (1 - d) * daylight * 0.8);
+    if (scene.fog instanceof Fog) {
+      if (!sceneTints.has(scene.fog)) sceneTints.set(scene.fog, scene.fog.color.clone());
+      scratch.lerp(sceneTints.get(scene.fog)!, daylight * TINT_STRENGTH);
+    }
     if (scene.background instanceof Color) {
       scene.background.copy(scratch);
     } else {
@@ -78,15 +86,6 @@ export function LightingSystem() {
 
   return (
     <>
-      {/* HDRI environment for realistic ambient lighting and reflections */}
-      <Suspense fallback={null}>
-        <Environment
-          files={HDRI.beach}
-          background={false}
-          environmentIntensity={0.5}
-        />
-      </Suspense>
-
       <directionalLight
         ref={sunRef}
         castShadow

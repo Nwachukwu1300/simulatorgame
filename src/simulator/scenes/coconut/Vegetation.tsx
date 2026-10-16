@@ -138,6 +138,9 @@ export function Vegetation() {
       <PalmTree position={[8.5, 4]} lean={0.35} height={5.8} seed={3} />
       <PalmTree position={[-10, 7]} lean={0.15} height={4.8} seed={4} />
       <PalmTree position={[14, 9]} lean={0.28} height={5.4} seed={5} />
+      {/* Down the shoreline in the camera's view; z < 1.2 keeps the walkers' lanes clear */}
+      <PalmTree position={[-11, 0.6]} lean={0.35} height={6} seed={6} />
+      <PalmTree position={[-19, 1.0]} lean={0.25} height={5.5} seed={7} />
       <Tufts />
     </>
   );
