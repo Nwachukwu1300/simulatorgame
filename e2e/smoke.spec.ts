@@ -119,10 +119,21 @@ test("achievements unlock, show a toast and persist", async ({ page }) => {
   expect(saved.secondsBySim.bench).toBeGreaterThanOrEqual(60);
 });
 
-test("Quit shows the farewell screen and Back returns to the menu", async ({ page }) => {
+test("Quit closes the tab, or shows the farewell screen when the browser refuses", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Quit", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Thank You for Existing" })).toBeVisible();
+  const farewell = page.getByRole("heading", { name: "Thank You for Existing" });
+  // Browsers only let script close tabs that script opened. Test tabs are script-opened,
+  // so some browsers (Firefox) really close; real visitors' tabs get the farewell screen.
+  const outcome = await Promise.race([
+    page.waitForEvent("close").then(() => "closed"),
+    page
+      .getByRole("button", { name: "Quit", exact: true })
+      .click()
+      .then(() => expect(farewell).toBeVisible())
+      .then(() => "farewell"),
+  ]).catch(() => (page.isClosed() ? "closed" : "error"));
+  expect(["closed", "farewell"]).toContain(outcome);
+  if (outcome === "closed") return;
   await page.getByRole("button", { name: "← Back" }).click();
   await expect(page.getByRole("button", { name: "Play", exact: true })).toBeVisible();
 });
@@ -132,11 +143,12 @@ test("select screen is usable on a phone-sized screen", async ({ page }) => {
   await openSelect(page);
   const cards = page.getByRole("button", { name: /Simulator\./ });
   await expect(cards).toHaveCount(3);
-  // Stacked vertically, each fully on screen
-  const boxes = await cards.evaluateAll((els) => els.map((e) => e.getBoundingClientRect().toJSON()));
-  for (const b of boxes) {
-    expect(b.width).toBeGreaterThan(350);
-    expect(b.bottom).toBeLessThanOrEqual(844 + 1);
-  }
+  // Stacked vertically, each fully on screen (polled: the screen fades in with a slight zoom)
+  await expect
+    .poll(() => cards.evaluateAll((els) => els.every((e) => {
+      const b = e.getBoundingClientRect();
+      return b.width > 350 && b.bottom <= 844 + 1;
+    })))
+    .toBe(true);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 });
