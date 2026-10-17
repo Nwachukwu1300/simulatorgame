@@ -30,11 +30,11 @@ npm test           # achievement rule tests (node:test)
 npm run typecheck  # TypeScript check
 npm run build      # production build into dist/
 
-npx playwright install chromium   # once, for the browser tests
-npm run test:e2e   # end-to-end tests: every screen and simulator, in a real browser
+npx playwright install chromium firefox webkit   # once, for the browser tests
+npm run test:e2e   # end-to-end tests in Chrome, Firefox and WebKit (Safari), plus a no-WebGL check
 ```
 
-GitHub Actions runs all of these on every push (`.github/workflows/ci.yml`).
+GitHub Actions runs all of these on every push (`.github/workflows/ci.yml`). Its machines have no GPU, so CI runs the 3D scenes in Chrome only; run the full browser set locally.
 
 ## How it works
 

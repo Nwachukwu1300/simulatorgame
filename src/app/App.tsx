@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, lazy, Suspense, Component, type ReactNode } from "react";
 import { motion, AnimatePresence, type MotionProps } from "motion/react";
 
 import {
@@ -912,6 +912,55 @@ function AchievementToast() {
   );
 }
 
+// ─── Engine failure ──────────────────────────────────────────────────────────
+
+/** Catches 3D engine crashes (e.g. no WebGL) so they don't blank the whole app. */
+class EngineBoundary extends Component<{ onError: () => void; children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  componentDidCatch(error: unknown) {
+    console.error("Simulator engine failed:", error);
+    this.props.onError();
+  }
+  render() {
+    return this.state.failed ? null : this.props.children;
+  }
+}
+
+function EngineFailure({ onBack }: { onBack: () => void }) {
+  return (
+    <motion.div
+      {...FADE}
+      role="alert"
+      className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-6 px-8 text-center bg-[#080706]"
+    >
+      <div className="w-10 h-px" style={{ background: "rgba(196,122,53,0.35)" }} />
+      <p
+        className="text-[#c47a35] text-[9px] tracking-[0.5em] uppercase"
+        style={{ fontFamily: "'Raleway', sans-serif" }}
+      >
+        System Notice
+      </p>
+      <h2
+        className="text-[#ede8df] font-normal"
+        style={{ fontFamily: "'Libre Caslon Display', serif", fontSize: "clamp(1.8rem, 3.5vw, 3rem)" }}
+      >
+        This World Cannot Be Rendered
+      </h2>
+      <p
+        className="text-[#8a7d6e] text-sm max-w-md leading-relaxed"
+        style={{ fontFamily: "'Raleway', sans-serif", fontWeight: 300 }}
+      >
+        Your browser or device does not support WebGL, which the simulation requires. Your object
+        continues to exist. It simply cannot be shown.
+      </p>
+      <BackButton onBack={onBack} />
+    </motion.div>
+  );
+}
+
 // ─── Quit Screen ──────────────────────────────────────────────────────────────
 
 function QuitScreen({ onReturn }: { onReturn: () => void }) {
@@ -1089,6 +1138,12 @@ export default function App() {
     setScreen("main");
   };
 
+  const [engineFailed, setEngineFailed] = useState(false);
+  const recoverFromEngineFailure = () => {
+    setEngineFailed(false);
+    handleQuitToMenu();
+  };
+
   // Browsers only let a page close tabs it opened itself; otherwise show a farewell.
   const handleQuitGame = () => {
     window.close();
@@ -1114,6 +1169,7 @@ export default function App() {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
       if (showArcadeWarning) closeArcadeWarning();
+      else if (engineFailed) recoverFromEngineFailure();
       else onEscape[screen]?.();
     };
     window.addEventListener("keydown", onKey);
@@ -1167,9 +1223,11 @@ export default function App() {
       {/* 3D simulator layer — sits beneath all UI overlays */}
       {simulatorActive && (
         <div className="absolute inset-0">
-          <Suspense fallback={null}>
-            <SimulatorCanvas simulatorId={selectedSim} />
-          </Suspense>
+          <EngineBoundary onError={() => setEngineFailed(true)}>
+            <Suspense fallback={null}>
+              <SimulatorCanvas simulatorId={selectedSim} />
+            </Suspense>
+          </EngineBoundary>
         </div>
       )}
 
@@ -1225,6 +1283,10 @@ export default function App() {
       </AnimatePresence>
 
       <AchievementToast />
+
+      <AnimatePresence>
+        {engineFailed && <EngineFailure key="engine-failure" onBack={recoverFromEngineFailure} />}
+      </AnimatePresence>
 
       <AnimatePresence>
         {showArcadeWarning && (

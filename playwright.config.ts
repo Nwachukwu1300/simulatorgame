@@ -19,6 +19,7 @@ export default defineConfig({
   projects: [
     {
       name: "chromium",
+      testIgnore: /no-webgl/,
       use: {
         ...devices["Desktop Chrome"],
         viewport: { width: 1440, height: 900 },
@@ -26,9 +27,15 @@ export default defineConfig({
         launchOptions: { args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader"] },
       },
     },
-    { name: "firefox", use: { ...devices["Desktop Firefox"], viewport: { width: 1440, height: 900 } } },
+    { name: "firefox", testIgnore: /no-webgl/, use: { ...devices["Desktop Firefox"], viewport: { width: 1440, height: 900 } } },
     // WebKit is the engine behind Safari
-    { name: "webkit", use: { ...devices["Desktop Safari"], viewport: { width: 1440, height: 900 } } },
+    { name: "webkit", testIgnore: /no-webgl/, use: { ...devices["Desktop Safari"], viewport: { width: 1440, height: 900 } } },
+    // A device without WebGL: the game must explain itself instead of going blank
+    {
+      name: "no-webgl",
+      testMatch: /no-webgl/,
+      use: { ...devices["Desktop Chrome"], launchOptions: { args: ["--disable-3d-apis"] } },
+    },
   ],
   webServer: {
     command: "npm run build && npx vite preview --port 4173 --strictPort",
