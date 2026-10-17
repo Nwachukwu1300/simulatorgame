@@ -8,10 +8,12 @@ import {
   Mesh,
   MeshBasicMaterial,
   Points,
+  BackSide,
+  Color,
   Vector3,
 } from "three";
 import { Sky } from "@react-three/drei";
-import { useSimulatorStore } from "../state/simulatorStore";
+import { useSimulatorStore, type WeatherType } from "../state/simulatorStore";
 import { getDaylightFactor, getSunPosition } from "../systems/TimeSystem";
 
 /** Soft cloud sprite drawn once to a canvas. */
@@ -36,6 +38,11 @@ function makeCloudTexture(): CanvasTexture {
 }
 
 const CLOUD_COUNT = 10;
+
+// The sky shader knows nothing of weather; this is how much grey veils it in each.
+const OVERCAST: Record<WeatherType, number> = { clear: 0, cloudy: 0.35, rain: 0.72, storm: 0.86, fog: 0.6 };
+const OVERCAST_GREY = new Color("#6b7178");
+const NIGHT_SKY = new Color("#0a0d18");
 
 /**
  * AtmosphericSky — procedural sky dome that follows the sun position.
@@ -85,7 +92,10 @@ export function SkyLayer() {
   const cloudRefs = useRef<(Mesh | null)[]>([]);
   const starsRef = useRef<Points>(null);
   const group = useRef<Group>(null);
-  const skyOpacity = useRef(1);
+  // The scattering sky shader stays mid-grey after sunset; this dark dome (inside the
+  // stars, outside everything else) fades in to give a proper night sky.
+  const nightVeil = useRef<MeshBasicMaterial>(null);
+  const overcast = useRef(0);
 
   const clouds = useMemo(
     () =>
@@ -137,6 +147,17 @@ export function SkyLayer() {
       m.color.setScalar(brightness * grey);
     });
 
+    // Night: fade in over the hour after sunset (sun 0 to 15 degrees below the horizon), so
+    // twilight keeps the sky shader's dusk colours. Weather: ease toward an overcast grey.
+    const sunHeight = Math.sin(((timeOfDay - 6) / 24) * Math.PI * 2);
+    const night = Math.min(1, Math.max(0, -sunHeight / 0.26));
+    overcast.current += (OVERCAST[weather] - overcast.current) * Math.min(1, delta * 0.5);
+    const veil = nightVeil.current;
+    if (veil) {
+      veil.opacity = Math.max(night * 0.94, overcast.current);
+      veil.color.copy(OVERCAST_GREY).multiplyScalar(0.35 + daylight * 0.65).lerp(NIGHT_SKY, night);
+    }
+
     if (starsRef.current) {
       const m = starsRef.current.material as MeshBasicMaterial;
       m.opacity = Math.max(0, 1 - daylight * 3) * (weather === "clear" ? 0.9 : 0.25);
@@ -147,6 +168,18 @@ export function SkyLayer() {
     <group ref={group}>
       {/* Procedural atmospheric sky */}
       <AtmosphericSky />
+
+      <mesh renderOrder={-1}>
+        <sphereGeometry args={[230, 32, 16]} />
+        <meshBasicMaterial
+          ref={nightVeil}
+          side={BackSide}
+          transparent
+          opacity={0}
+          depthWrite={false}
+          fog={false}
+        />
+      </mesh>
 
       {/* Billboard clouds */}
       {clouds.map((c, i) => (

@@ -69,7 +69,8 @@ export function RainEffect() {
   return (
     <>
       <points ref={pointsRef} geometry={geometry} position={[0, 0, -4]}>
-        <pointsMaterial color="#9fb4c4" size={0.05} transparent opacity={0.4} depthWrite={false} />
+        {/* Fixed pixel size: with distance scaling, drops passing the lens became big squares */}
+        <pointsMaterial color="#b9c8d4" size={2} sizeAttenuation={false} transparent opacity={0.45} depthWrite={false} />
       </points>
       <pointLight ref={flashRef} position={[10, 18, -30]} color="#cfd8ff" intensity={0} distance={200} />
     </>
