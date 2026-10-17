@@ -48,3 +48,7 @@ public/textures/**/*.blend/
 
 # Local Playwright screenshots/logs
 .playwright-mcp
+
+# Playwright test output
+test-results/
+playwright-report/
