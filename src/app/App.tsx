@@ -1,7 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { useProgress } from "@react-three/drei";
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 import { motion, AnimatePresence, type MotionProps } from "motion/react";
-import { SimulatorCanvas } from "@/simulator/engine/SimulatorCanvas";
+
 import {
   useSimulatorStore,
   formatTimeOfDay,
@@ -19,8 +18,16 @@ interface SimData {
   subtitle: string;
   desc: string;
   img: string;
+  /** Where the hero object sits in the render (CSS object-position), so cropped cards keep it in view. */
+  focus: string;
   accentColor: string;
 }
+
+// The 3D engine (three.js and friends) is most of the bundle; load it only when a
+// simulator starts, so the menus appear without waiting for it.
+const SimulatorCanvas = lazy(() =>
+  import("@/simulator/engine/SimulatorCanvas").then((m) => ({ default: m.SimulatorCanvas })),
+);
 
 const SIMS: SimData[] = [
   {
@@ -29,6 +36,7 @@ const SIMS: SimData[] = [
     subtitle: "Tropical Coast — Latitude 8.5°N",
     desc: "The tide does not ask your permission.",
     img: "/menu/coconut.jpg",
+    focus: "74% 50%",
     accentColor: "#c47a35",
   },
   {
@@ -37,6 +45,7 @@ const SIMS: SimData[] = [
     subtitle: "Meridian Park — Autumn, Year Four",
     desc: "Seasons change. You endure.",
     img: "/menu/bench.jpg",
+    focus: "64% 50%",
     accentColor: "#4a7c45",
   },
   {
@@ -45,6 +54,7 @@ const SIMS: SimData[] = [
     subtitle: "The Forgotten Temple — Estimated Age: 2,400 Years",
     desc: "The jungle does not remember your name.",
     img: "/menu/idol.jpg",
+    focus: "57% 50%",
     accentColor: "#8a5c2a",
   },
 ];
@@ -167,8 +177,8 @@ function MainMenu({
         <div className="flex flex-col gap-14">
           <div className="flex flex-col gap-4">
             <p
-              className="text-[#5a4e42] text-[10px] tracking-[0.55em] uppercase"
-              style={{ fontFamily: "'Raleway', sans-serif" }}
+              className="text-[#8a7d6e] text-[10px] tracking-[0.55em] uppercase"
+              style={{ fontFamily: "'Raleway', sans-serif", textShadow: "0 1px 8px rgba(8,7,6,0.8)" }}
             >
               A First Party Studio Production
             </p>
@@ -224,7 +234,7 @@ function MainMenu({
             className="text-[#2a2018] text-[9px] tracking-[0.35em] uppercase"
             style={{ fontFamily: "'Raleway', sans-serif" }}
           >
-            © 2024 — All Rights Reserved
+            © {new Date().getFullYear()} — All Rights Reserved
           </p>
         </div>
       </div>
@@ -355,6 +365,10 @@ function SimulatorSelect({
   onBack: () => void;
 }) {
   const [hovered, setHovered] = useState<SimType | null>(null);
+  // Warm the lazily loaded engine while the player chooses, so loading starts instantly.
+  useEffect(() => {
+    void import("@/simulator/engine/SimulatorCanvas");
+  }, []);
 
   return (
     <motion.div {...FADE} className="absolute inset-0 bg-[#080706]">
@@ -386,8 +400,8 @@ function SimulatorSelect({
       </div>
       <BackButton onBack={onBack} />
 
-      {/* Cards row */}
-      <div className="absolute inset-0 flex">
+      {/* Cards: a row of tall chapter cards on wide screens, stacked under the header on phones */}
+      <div className="absolute inset-0 flex flex-col pt-56 md:flex-row md:pt-0">
         {SIMS.map((sim, i) => (
           <div
             key={sim.id}
@@ -416,6 +430,7 @@ function SimulatorSelect({
               alt={sim.title}
               className="absolute inset-0 w-full h-full object-cover"
               style={{
+                objectPosition: sim.focus,
                 filter:
                   hovered === sim.id
                     ? "brightness(0.6) saturate(0.85)"
@@ -432,12 +447,12 @@ function SimulatorSelect({
             />
             {i < SIMS.length - 1 && (
               <div
-                className="absolute right-0 inset-y-0 w-px z-10"
+                className="absolute right-0 inset-y-0 w-px z-10 hidden md:block"
                 style={{ background: "rgba(196,122,53,0.12)" }}
               />
             )}
 
-            <div className="absolute inset-0 flex flex-col justify-end p-10 md:p-14">
+            <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-14">
               <div className="flex flex-col gap-4">
                 <div
                   className="h-px"
@@ -507,9 +522,15 @@ function LoadingScreen({
   onDone: () => void;
   onCancel: () => void;
 }) {
-  const [tip] = useState(() => TIPS[Math.floor(Math.random() * TIPS.length)]);
-  // Real progress: drei tracks every model/texture/HDRI through three's loading manager.
-  const { active, progress: loaded } = useProgress();
+  // The brief's "rotating tip line": start somewhere random, move on every few seconds.
+  const [tipIndex, setTipIndex] = useState(() => Math.floor(Math.random() * TIPS.length));
+  useEffect(() => {
+    const t = setInterval(() => setTipIndex((i) => (i + 1) % TIPS.length), 3500);
+    return () => clearInterval(t);
+  }, []);
+  // Real progress from three's loading manager, relayed through the store by the engine.
+  const active = useSimulatorStore((s) => s.assetsLoading);
+  const loaded = useSimulatorStore((s) => s.assetProgress);
   const sceneReady = useSimulatorStore((s) => s.sceneReady);
   const done = sceneReady && !active;
 
@@ -559,7 +580,18 @@ function LoadingScreen({
               letterSpacing: "0.02em",
             }}
           >
-            {tip}
+            <AnimatePresence mode="wait">
+              <motion.span
+                key={tipIndex}
+                className="block"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.5 }}
+              >
+                {TIPS[tipIndex]}
+              </motion.span>
+            </AnimatePresence>
           </p>
         </div>
 
@@ -1135,7 +1167,9 @@ export default function App() {
       {/* 3D simulator layer — sits beneath all UI overlays */}
       {simulatorActive && (
         <div className="absolute inset-0">
-          <SimulatorCanvas simulatorId={selectedSim} />
+          <Suspense fallback={null}>
+            <SimulatorCanvas simulatorId={selectedSim} />
+          </Suspense>
         </div>
       )}
 

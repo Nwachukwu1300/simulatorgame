@@ -123,9 +123,9 @@ function Couple({ channel }: { channel: EventChannel }) {
       walk(walkers, x, parkHeight(x, z), z, t, -Math.PI / 2);
     } else if (walkOut) {
       const q = easeInOut((p - 0.9) / 0.1);
-      const x = bx + q * 10;
+      const x = bx - q * 10; // leave the way the camera isn't looking
       const z = 3.5 - q * 0.9;
-      walk(walkers, x, parkHeight(x, z), z, t, Math.PI / 2);
+      walk(walkers, x, parkHeight(x, z), z, t, -Math.PI / 2);
     } else {
       // The occasional nod. Conversation, presumably.
       (seated.children[0] as Group).rotation.x = Math.sin(t * 0.8) * 0.03;

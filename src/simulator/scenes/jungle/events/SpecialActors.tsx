@@ -276,7 +276,8 @@ function Helicopter({ channel }: { channel: EventChannel }) {
       started.current = true;
       rotorPass(13);
     }
-    g.position.set(-45 + p * 90, 24 + Math.sin(p * Math.PI) * 2, -22);
+    // Low over the far ridge so it crosses the canopy gaps in the camera's view
+    g.position.set(-45 + p * 90, 18 + Math.sin(p * Math.PI) * 2, -65);
     g.rotation.z = -0.08;
     (g.children[1] as Mesh).rotation.y = t * 30; // main rotor
     (g.children[3] as Mesh).rotation.x = t * 34; // tail rotor

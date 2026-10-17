@@ -90,7 +90,7 @@ function Groundskeeper({ channel }: { channel: EventChannel }) {
 
 /** A busker sets up across the path. The acoustics here are honest. */
 function Musician({ channel }: { channel: EventChannel }) {
-  const spot: [number, number] = [-4.5, 3.7];
+  const spot: [number, number] = [2.5, 3.8]; // between the two benches, in the camera's view
   const ref = useEventAnim(channel, (g, p, t) => {
     let x = spot[0];
     const walkIn = p < 0.08;
@@ -98,7 +98,8 @@ function Musician({ channel }: { channel: EventChannel }) {
     if (walkIn) x = spot[0] - (1 - easeInOut(p / 0.08)) * 9;
     if (walkOut) x = spot[0] - easeInOut((p - 0.92) / 0.08) * 9;
     const moving = walkIn || walkOut;
-    walk(g, x, parkHeight(x, spot[1]), spot[1], moving ? t : 0, moving ? Math.PI / 2 : 0);
+    const heading = walkOut ? -Math.PI / 2 : Math.PI / 2; // face the way they walk
+    walk(g, x, parkHeight(x, spot[1]), spot[1], moving ? t : 0, moving ? heading : 0);
     if (!moving) g.rotation.z = Math.sin(t * 1.8) * 0.05; // playing sway
     (g.children[2] as Group).visible = !moving; // guitar case only while set up
   });

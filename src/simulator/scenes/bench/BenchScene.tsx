@@ -22,7 +22,10 @@ export default function BenchScene() {
 
   return (
     <SimulatorScene
-      camera={{ position: [3.4, 1.6, 4.9], target: [0, 0.7, 0.3], swayAmount: 0.045 }}
+      // Three-quarter front view from just beyond the walking lanes, clear of the lamps,
+      // bin and flower beds, so the couple, busker and film crew are in shot (the old angle
+      // never showed them).
+      camera={{ position: [4.0, 2.0, 6.0], target: [0, 1.1, 2], swayAmount: 0.045 }}
       fog={["#b3ac9e", 35, 160]}
       initialWeather="clear"
       weatherCycle

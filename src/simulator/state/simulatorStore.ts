@@ -19,6 +19,10 @@ interface SimulatorState {
   paused: boolean;
   /** True once the active scene has mounted (its code-split chunk and top-level assets loaded). */
   sceneReady: boolean;
+  /** Mirrors three's loading manager (via drei's useProgress) so DOM UI needn't import the engine. */
+  assetsLoading: boolean;
+  /** Percentage [0, 100] of queued assets loaded. */
+  assetProgress: number;
 
   // ── Time ──────────────────────────────────────────────────────────────
   /** In-simulation time of day, in hours [0, 24). */
@@ -37,6 +41,7 @@ interface SimulatorState {
   stopSimulator: () => void;
   setPaused: (paused: boolean) => void;
   setSceneReady: (ready: boolean) => void;
+  setAssetLoad: (loading: boolean, progress: number) => void;
   advanceTime: (deltaSeconds: number) => void;
   setTimeOfDay: (hours: number) => void;
   setWeather: (weather: WeatherType) => void;
@@ -47,16 +52,27 @@ export const useSimulatorStore = create<SimulatorState>((set) => ({
   activeSimulator: null,
   paused: false,
   sceneReady: false,
+  assetsLoading: false,
+  assetProgress: 0,
   timeOfDay: 10, // sims start mid-morning
   timeScale: 0.1,
   weather: "clear",
   graphics: "High",
 
   startSimulator: (id) =>
-    set({ activeSimulator: id, paused: false, sceneReady: false, timeOfDay: 10, weather: "clear" }),
+    set({
+      activeSimulator: id,
+      paused: false,
+      sceneReady: false,
+      assetsLoading: false,
+      assetProgress: 0,
+      timeOfDay: 10,
+      weather: "clear",
+    }),
   stopSimulator: () => set({ activeSimulator: null, paused: false, sceneReady: false }),
   setPaused: (paused) => set({ paused }),
   setSceneReady: (sceneReady) => set({ sceneReady }),
+  setAssetLoad: (assetsLoading, assetProgress) => set({ assetsLoading, assetProgress }),
   advanceTime: (deltaSeconds) =>
     set((s) => ({
       timeOfDay: (s.timeOfDay + deltaSeconds * s.timeScale) % 24,

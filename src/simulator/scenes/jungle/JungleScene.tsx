@@ -35,7 +35,9 @@ export default function JungleScene() {
 
   return (
     <SimulatorScene
-      camera={{ position: [2.9, 1.4, 4.2], target: [0, 1.0, 0.2], swayAmount: 0.04 }}
+      // Facing the idol from beyond the path: the perch, dig site, torch, far ridge
+      // (waterfall, campfire) and the canopy are all in shot.
+      camera={{ position: [1, 1.2, 7], target: [0, 1.5, 3], swayAmount: 0.04 }}
       fog={["#4f5c48", 12, 110]}
       initialWeather="clear"
       weatherCycle

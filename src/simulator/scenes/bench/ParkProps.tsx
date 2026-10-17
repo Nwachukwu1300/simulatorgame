@@ -15,7 +15,8 @@ import { parkHeight } from "./terrain";
 import { ParkBench } from "./Bench";
 
 /** The bench the couple event uses — actors need its exact spot. */
-export const COUPLE_BENCH: [number, number, number] = [5.6, 0, 3.9];
+// The left-hand bench: in the camera's view (the right-hand one sits beside the lens).
+export const COUPLE_BENCH: [number, number, number] = [-8.2, 0, 3.9];
 
 // ── Trees ─────────────────────────────────────────────────────────────
 
@@ -244,7 +245,7 @@ export function ParkProps() {
       <LampPosts />
       <Fence />
       {/* Other benches. They face the path, as benches do. */}
-      <ParkBench position={[-8.2, parkHeight(-8.2, 3.9), 3.9]} rotationY={Math.PI} weathered />
+      <ParkBench position={[5.6, parkHeight(5.6, 3.9), 3.9]} rotationY={Math.PI} weathered />
       <ParkBench position={COUPLE_BENCH} rotationY={Math.PI} weathered />
       <ParkBench position={[11.5, parkHeight(11.5, 3.9), 3.9]} rotationY={Math.PI} weathered />
       {/* A public bin. Municipal realism. */}

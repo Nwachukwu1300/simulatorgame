@@ -1,4 +1,5 @@
 import { Suspense, useEffect } from "react";
+import { useProgress } from "@react-three/drei";
 import { SIMULATOR_REGISTRY } from "../registry";
 import { useSimulatorStore, type SimulatorId } from "../state/simulatorStore";
 
@@ -12,11 +13,21 @@ import { useSimulatorStore, type SimulatorId } from "../state/simulatorStore";
 export function EnvironmentLoader({ simulatorId }: { simulatorId: SimulatorId }) {
   const Scene = SIMULATOR_REGISTRY[simulatorId].scene;
   return (
-    <Suspense fallback={null}>
-      <Scene />
-      <SceneReady />
-    </Suspense>
+    <>
+      <LoadTracker />
+      <Suspense fallback={null}>
+        <Scene />
+        <SceneReady />
+      </Suspense>
+    </>
   );
+}
+
+/** Publishes asset loading progress to the store for the DOM loading screen. */
+function LoadTracker() {
+  const { active, progress } = useProgress();
+  useEffect(() => useSimulatorStore.getState().setAssetLoad(active, progress), [active, progress]);
+  return null;
 }
 
 /** Mounts only once the Suspense boundary resolves, i.e. the scene is in. */
