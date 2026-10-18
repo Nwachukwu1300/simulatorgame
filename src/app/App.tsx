@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, lazy, Suspense, Component, type ReactNode } from "react";
-import { motion, AnimatePresence, type MotionProps } from "motion/react";
+import { motion, AnimatePresence, MotionConfig, type MotionProps } from "motion/react";
 
 import {
   useSimulatorStore,
@@ -8,6 +8,7 @@ import {
 } from "@/simulator/state/simulatorStore";
 import { useProgressStore, formatDuration } from "@/simulator/state/progress";
 import { ACHIEVEMENTS } from "@/simulator/state/achievements";
+import { unlockAudio } from "@/simulator/engine/audioUnlock";
 
 type Screen = "main" | "settings" | "simulator-select" | "loading" | "hud" | "pause" | "quit";
 type SimType = SimulatorId;
@@ -87,11 +88,10 @@ function MenuBackdrop({ filter = "brightness(0.5) saturate(0.75)" }: { filter?: 
           key={sim.id}
           src={sim.img}
           alt=""
-          className="absolute inset-0 w-full h-full object-cover"
+          className="menu-drift absolute inset-0 w-full h-full object-cover"
           style={{
             opacity: n === shown ? 1 : 0,
             transition: "opacity 2.5s ease-in-out",
-            animation: "driftPan 50s ease-in-out infinite",
           }}
         />
       ))}
@@ -1116,6 +1116,7 @@ export default function App() {
   };
 
   const handleSelectSim = (sim: SimType) => {
+    unlockAudio(); // must happen inside this click/keypress for Safari
     setSelectedSim(sim);
     // Boot the engine now: the scene loads and warms up behind the
     // (opaque) loading screen overlay.
@@ -1187,115 +1188,121 @@ export default function App() {
     (screen === "settings" && settingsReturn === "pause");
 
   return (
-    <div className="relative w-full h-screen overflow-hidden bg-[#080706]">
-      <style>{`
-        @keyframes driftPan {
-          0%   { transform: scale(1.09) translate(0px, 0px); }
-          20%  { transform: scale(1.09) translate(-18px, -10px); }
-          45%  { transform: scale(1.09) translate(-8px, 14px); }
-          70%  { transform: scale(1.09) translate(14px, -6px); }
-          100% { transform: scale(1.09) translate(0px, 0px); }
-        }
-        .menu-item {
-          position: relative;
-          cursor: pointer;
-          letter-spacing: 0.28em;
-          text-transform: uppercase;
-          font-size: 0.7rem;
-          transition: color 0.45s ease;
-        }
-        .menu-item::after {
-          content: '';
-          position: absolute;
-          bottom: -3px;
-          left: 0;
-          width: 0;
-          height: 1px;
-          background: #c47a35;
-          transition: width 0.55s cubic-bezier(0.25, 0.1, 0.25, 1);
-        }
-        .menu-item:hover { color: #ede8df !important; }
-        .menu-item:hover::after { width: 100%; }
-        * { scrollbar-width: none; }
-        *::-webkit-scrollbar { display: none; }
-      `}</style>
+    <MotionConfig reducedMotion="user">
+      <div className="relative w-full h-screen overflow-hidden bg-[#080706]">
+        <style>{`
+          @keyframes driftPan {
+            0%   { transform: scale(1.09) translate(0px, 0px); }
+            20%  { transform: scale(1.09) translate(-18px, -10px); }
+            45%  { transform: scale(1.09) translate(-8px, 14px); }
+            70%  { transform: scale(1.09) translate(14px, -6px); }
+            100% { transform: scale(1.09) translate(0px, 0px); }
+          }
+          .menu-drift { animation: driftPan 50s ease-in-out infinite; }
+          @media (prefers-reduced-motion: reduce) {
+            .menu-drift { animation: none; transform: scale(1.09); }
+          }
+          .menu-item {
+            position: relative;
+            cursor: pointer;
+            letter-spacing: 0.28em;
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            transition: color 0.45s ease;
+          }
+          .menu-item::after {
+            content: '';
+            position: absolute;
+            bottom: -3px;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background: #c47a35;
+            transition: width 0.55s cubic-bezier(0.25, 0.1, 0.25, 1);
+          }
+          .menu-item:hover { color: #ede8df !important; }
+          .menu-item:hover::after { width: 100%; }
+          * { scrollbar-width: none; }
+          *::-webkit-scrollbar { display: none; }
+        `}</style>
 
-      {/* 3D simulator layer — sits beneath all UI overlays */}
-      {simulatorActive && (
-        <div className="absolute inset-0">
-          <EngineBoundary onError={() => setEngineFailed(true)}>
-            <Suspense fallback={null}>
-              <SimulatorCanvas simulatorId={selectedSim} />
-            </Suspense>
-          </EngineBoundary>
-        </div>
-      )}
+        {/* 3D simulator layer — sits beneath all UI overlays */}
+        {simulatorActive && (
+          <div className="absolute inset-0">
+            <EngineBoundary onError={() => setEngineFailed(true)}>
+              <Suspense fallback={null}>
+                <SimulatorCanvas simulatorId={selectedSim} />
+              </Suspense>
+            </EngineBoundary>
+          </div>
+        )}
 
-      <AnimatePresence mode="wait">
-        {screen === "main" && (
-          <MainMenu
-            key="main"
-            onPlay={() => setScreen("simulator-select")}
-            onSettings={() => goSettings("main")}
-            onQuit={handleQuitGame}
-          />
-        )}
-        {screen === "settings" && (
-          <SettingsMenu
-            key="settings"
-            graphics={graphics}
-            mode={mode}
-            onGraphics={setGraphics}
-            onMode={handleModeToggle}
-            onBack={() => setScreen(settingsReturn)}
-            overSimulator={settingsReturn === "pause"}
-          />
-        )}
-        {screen === "simulator-select" && (
-          <SimulatorSelect
-            key="sim-select"
-            onSelect={handleSelectSim}
-            onBack={() => setScreen("main")}
-          />
-        )}
-        {screen === "loading" && (
-          <LoadingScreen
-            key="loading"
-            sim={currentSim}
-            onDone={finishLoading}
-            onCancel={cancelLoading}
-          />
-        )}
-        {screen === "hud" && (
-          <HUDScreen key="hud" sim={currentSim} onPause={handlePause} />
-        )}
-        {screen === "pause" && (
-          <PauseMenu
-            key="pause"
-            onResume={handleResume}
-            onSettings={() => goSettings("pause")}
-            onQuit={handleQuitToMenu}
-          />
-        )}
-        {screen === "quit" && (
-          <QuitScreen key="quit" onReturn={() => setScreen("main")} />
-        )}
-      </AnimatePresence>
+        <AnimatePresence mode="wait">
+          {screen === "main" && (
+            <MainMenu
+              key="main"
+              onPlay={() => setScreen("simulator-select")}
+              onSettings={() => goSettings("main")}
+              onQuit={handleQuitGame}
+            />
+          )}
+          {screen === "settings" && (
+            <SettingsMenu
+              key="settings"
+              graphics={graphics}
+              mode={mode}
+              onGraphics={setGraphics}
+              onMode={handleModeToggle}
+              onBack={() => setScreen(settingsReturn)}
+              overSimulator={settingsReturn === "pause"}
+            />
+          )}
+          {screen === "simulator-select" && (
+            <SimulatorSelect
+              key="sim-select"
+              onSelect={handleSelectSim}
+              onBack={() => setScreen("main")}
+            />
+          )}
+          {screen === "loading" && (
+            <LoadingScreen
+              key="loading"
+              sim={currentSim}
+              onDone={finishLoading}
+              onCancel={cancelLoading}
+            />
+          )}
+          {screen === "hud" && (
+            <HUDScreen key="hud" sim={currentSim} onPause={handlePause} />
+          )}
+          {screen === "pause" && (
+            <PauseMenu
+              key="pause"
+              onResume={handleResume}
+              onSettings={() => goSettings("pause")}
+              onQuit={handleQuitToMenu}
+            />
+          )}
+          {screen === "quit" && (
+            <QuitScreen key="quit" onReturn={() => setScreen("main")} />
+          )}
+        </AnimatePresence>
 
-      <AchievementToast />
+        <AchievementToast />
 
-      <AnimatePresence>
-        {engineFailed && <EngineFailure key="engine-failure" onBack={recoverFromEngineFailure} />}
-      </AnimatePresence>
+        <AnimatePresence>
+          {engineFailed && <EngineFailure key="engine-failure" onBack={recoverFromEngineFailure} />}
+        </AnimatePresence>
 
-      <AnimatePresence>
-        {showArcadeWarning && (
-          <ArcadeWarning
-            key="arcade-warning"
-            onClose={closeArcadeWarning}
-          />
-        )}
-      </AnimatePresence>
-    </div>
+        <AnimatePresence>
+          {showArcadeWarning && (
+            <ArcadeWarning
+              key="arcade-warning"
+              onClose={closeArcadeWarning}
+            />
+          )}
+        </AnimatePresence>
+      </div>
+    </MotionConfig>
   );
 }

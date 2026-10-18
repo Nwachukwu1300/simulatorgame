@@ -152,3 +152,28 @@ test("select screen is usable on a phone-sized screen", async ({ page }) => {
     .toBe(true);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 });
+
+test("the Graphics choice is remembered after a reload", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await page.getByRole("button", { name: "Low", exact: true }).click();
+  await page.reload();
+  const stored = await page.evaluate(() => localStorage.getItem("simulator-collection-graphics"));
+  expect(stored).toBe("Low");
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  // The active option is drawn in the accent colour
+  await expect(page.getByRole("button", { name: "Low", exact: true })).toHaveCSS("color", "rgb(196, 122, 53)");
+});
+
+test("reduced motion stops the drifting menu art", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  await expect(page.locator(".menu-drift").first()).toHaveCSS("animation-name", "none");
+});
+
+test("the page is indexable and has link-preview tags", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
+  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute("content", /\/menu\/coconut\.jpg$/);
+  await expect(page.locator('meta[property="og:title"]')).toHaveAttribute("content", "Simulator Collection");
+});

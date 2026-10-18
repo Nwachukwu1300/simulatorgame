@@ -30,6 +30,8 @@ export function CameraController({
   const camera = useThree((s) => s.camera);
   const aspect = useThree((s) => s.size.width / s.size.height);
   const elapsed = useRef(0);
+  // Honour the OS "reduce motion" setting: hold the frame perfectly still.
+  const sway = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? 0 : swayAmount;
 
   // Framings are composed for landscape, with the object off-centre. On tall phone
   // screens that crops it out, so ease the aim toward the object (every simulator
@@ -56,9 +58,9 @@ export function CameraController({
     elapsed.current += delta;
     const t = elapsed.current;
     camera.position.set(
-      position[0] + Math.sin(t * 0.32) * swayAmount,
-      position[1] + Math.sin(t * 0.21) * swayAmount * 0.6,
-      position[2] + Math.cos(t * 0.27) * swayAmount,
+      position[0] + Math.sin(t * 0.32) * sway,
+      position[1] + Math.sin(t * 0.21) * sway * 0.6,
+      position[2] + Math.cos(t * 0.27) * sway,
     );
     camera.lookAt(aimAt(lookTarget));
   });

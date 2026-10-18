@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useThree } from "@react-three/fiber";
-import { Audio, AudioListener, AudioLoader } from "three";
+import { Audio, AudioContext as ThreeAudioContext, AudioListener, AudioLoader } from "three";
+import { getUnlockedAudioContext } from "./audioUnlock";
 
 /**
  * AudioSystem — foundation for ambient and positional audio.
@@ -60,7 +61,12 @@ export function AudioSystem() {
   const camera = useThree((s) => s.camera);
 
   useEffect(() => {
-    if (!listener) listener = new AudioListener();
+    if (!listener) {
+      // Adopt the context unlocked during the click that started the simulator (Safari).
+      const unlocked = getUnlockedAudioContext();
+      if (unlocked) ThreeAudioContext.setContext(unlocked);
+      listener = new AudioListener();
+    }
     camera.add(listener);
 
     // Browsers suspend the AudioContext until a user gesture.

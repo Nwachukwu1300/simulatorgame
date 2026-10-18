@@ -48,6 +48,17 @@ interface SimulatorState {
   setGraphics: (graphics: GraphicsQuality) => void;
 }
 
+// The Graphics choice is remembered between visits. Saved by hand rather than with
+// zustand's persist, which would write on every set (this store changes every frame).
+const GRAPHICS_KEY = "simulator-collection-graphics";
+function loadGraphics(): GraphicsQuality {
+  try {
+    return localStorage.getItem(GRAPHICS_KEY) === "Low" ? "Low" : "High";
+  } catch {
+    return "High";
+  }
+}
+
 export const useSimulatorStore = create<SimulatorState>((set) => ({
   activeSimulator: null,
   paused: false,
@@ -57,7 +68,7 @@ export const useSimulatorStore = create<SimulatorState>((set) => ({
   timeOfDay: 10, // sims start mid-morning
   timeScale: 0.1,
   weather: "clear",
-  graphics: "High",
+  graphics: loadGraphics(),
 
   startSimulator: (id) =>
     set({
@@ -79,7 +90,14 @@ export const useSimulatorStore = create<SimulatorState>((set) => ({
     })),
   setTimeOfDay: (hours) => set({ timeOfDay: ((hours % 24) + 24) % 24 }),
   setWeather: (weather) => set({ weather }),
-  setGraphics: (graphics) => set({ graphics }),
+  setGraphics: (graphics) => {
+    try {
+      localStorage.setItem(GRAPHICS_KEY, graphics);
+    } catch {
+      // Private mode or storage blocked: the choice lasts for this visit only.
+    }
+    set({ graphics });
+  },
 }));
 
 /** Formats a timeOfDay value (hours) as a 24h clock string, e.g. "14:32". */
